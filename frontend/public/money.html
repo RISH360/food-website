@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Money</title>
+    <script src="user-session.js"></script>
     <script src="footer.js" defer></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
@@ -265,9 +266,9 @@
 
 <script>
  document.addEventListener("DOMContentLoaded", function () {
-    let accountExists = localStorage.getItem("cookieAccountCreated");
+    let accountExists = window.UserSession ? window.UserSession.getScoped("cookieAccountCreated", false) : (localStorage.getItem("cookieAccountCreated") === "true");
     let moneyValueElement = document.getElementById("money-value");
-    let cookieMoney = parseFloat(localStorage.getItem("cookieMoney")) || 0;
+    let cookieMoney = window.UserSession ? (parseFloat(window.UserSession.getScoped("cookieMoney", 0)) || 0) : (parseFloat(localStorage.getItem("cookieMoney")) || 0);
     
     if (accountExists) {
         document.getElementById("settings-icon").style.display = "block";
@@ -278,7 +279,8 @@
         
         moneyValueElement.textContent = `₹${cookieMoney.toFixed(2)}`;
         
-        if (!localStorage.getItem("bonusApplied")) {
+        let bonusApplied = window.UserSession ? window.UserSession.getScoped("bonusApplied", false) : localStorage.getItem("bonusApplied");
+        if (!bonusApplied) {
             showBonusPopup();
         }
     } else {
@@ -310,18 +312,22 @@ function showBonusPopup() {
     }, 50);
     
     document.getElementById("apply-bonus").addEventListener("click", function () {
-        let currentBalance = parseFloat(localStorage.getItem("cookieMoney")) || 0;
+        let currentBalance = window.UserSession ? (parseFloat(window.UserSession.getScoped("cookieMoney", 0)) || 0) : (parseFloat(localStorage.getItem("cookieMoney")) || 0);
         let targetBalance = currentBalance + 4.75;
 
+        if (window.UserSession) {
+            window.UserSession.setScoped("cookieMoney", targetBalance.toFixed(2));
+            window.UserSession.setScoped("bonusApplied", true);
+        }
         localStorage.setItem("cookieMoney", targetBalance.toFixed(2));
-        localStorage.setItem("bonusApplied", "true"); // Mark bonus as applied
+        localStorage.setItem("bonusApplied", "true");
         
         let moneyValueElement = document.getElementById("money-value");
         if (moneyValueElement) {
             animateMoneyIncrease(currentBalance, targetBalance, moneyValueElement);
         }
         
-        document.body.removeChild(popup); // Remove pop-up after applying bonus
+        document.body.removeChild(popup);
     });
 }
 

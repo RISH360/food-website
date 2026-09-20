@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cart</title>
+    <script src="user-session.js"></script>
     <script src="footer.js" defer></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
@@ -571,13 +572,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const cancellationPolicy = document.getElementById("cancellation-policy");
       
     function loadActiveAddress() {
-        let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-        let activeAddress = localStorage.getItem("activeAddress");
+        let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
+        let activeAddress = window.UserSession ? window.UserSession.getActiveAddress() : null;
 
         let addressText = "Not set";
 
-        if (activeAddress) {
-            let address = savedAddresses.find(addr => addr.houseNo === activeAddress);
+        if (activeAddress && savedAddresses.length > 0) {
+            let address = savedAddresses.find(addr => addr.houseNo === activeAddress) || savedAddresses[0];
             if (address) {
                 addressText = `${address.houseNo}, ${address.roadName}, ${address.city}, ${address.state} - ${address.pincode}`;
             }
@@ -587,13 +588,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
      
     function loadActivePhone() {
-        let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-        let activeNumber = localStorage.getItem("activeNumber");
+        let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
+        let activeNumber = window.UserSession ? window.UserSession.getActivePhone() : null;
 
         let phoneText = "Not set";
 
-        if (activeNumber) {
-            let phoneEntry = savedNumbers.find(num => num.number === activeNumber);
+        if (activeNumber && savedNumbers.length > 0) {
+            let phoneEntry = savedNumbers.find(num => num.number === activeNumber) || savedNumbers[0];
             if (phoneEntry) {
                 phoneText = phoneEntry.number;
             }
@@ -605,13 +606,15 @@ document.addEventListener("DOMContentLoaded", () => {
     loadActiveAddress();
     loadActivePhone();
 
-    const savedPayment = localStorage.getItem("selectedPaymentMethod") || "Option not selected";
+    const savedPayment = (window.UserSession && window.UserSession.getScoped("selectedPaymentMethod")) ||
+                         localStorage.getItem("selectedPaymentMethod") ||
+                         "Cash on Delivery";
     if (paymentButton) {
         paymentButton.textContent = savedPayment;
     }
 
-    const userEmail = sessionStorage.getItem("profileEmail");
-    let cartKey = `cartProducts_${userEmail}`;
+    const userEmail = window.UserSession ? window.UserSession.getEmail() : (sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail"));
+    let cartKey = userEmail ? `cartProducts_${userEmail}` : `cartProducts_guest`;
     let cartProducts = JSON.parse(localStorage.getItem(cartKey)) || [];
 
     let itemTotal = 0;
@@ -760,9 +763,13 @@ function openPaymentOptions() {
 function placeOrder() {
     const address = document.getElementById("cart-deliveryAddress").textContent.trim();
     const phone = document.getElementById("cart-phoneNumber").textContent.trim();
-    const paymentMethod = document.getElementById("selected-payment").textContent.trim();
+    let paymentMethod = document.getElementById("selected-payment").textContent.trim();
+    if (!paymentMethod || paymentMethod === "Option not selected") {
+        paymentMethod = "Cash on Delivery";
+    }
 
-    const cartKey = `cartProducts_${sessionStorage.getItem("profileEmail")}`;
+    const userEmail = window.UserSession ? window.UserSession.getEmail() : (sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail"));
+    const cartKey = userEmail ? `cartProducts_${userEmail}` : `cartProducts_guest`;
     let cartProducts = JSON.parse(localStorage.getItem(cartKey)) || [];
 
     let cookiePayPaid = localStorage.getItem("cookiePayPaid") === "true";
@@ -772,46 +779,58 @@ function placeOrder() {
         return;
     }
 
-    if (paymentMethod === "Option not selected") {
-        alert("Please select a payment method before placing an order.");
-        return;
-    }
-
     if (paymentMethod === "Cookie Pay" && !cookiePayPaid) {
         alert("Insufficient Balance! Your Cookie Pay balance is less than the total bill.");
         return;
     }
 
     if (cartProducts.length > 0) {
-        const existingOrders = JSON.parse(localStorage.getItem("orderedProducts")) || [];
-        const updatedOrders = [...existingOrders, ...cartProducts];
+        const orderTimestamp = new Date().toISOString();
+        const existingOrders = window.UserSession ? window.UserSession.getOrders() : (JSON.parse(localStorage.getItem("orderedProducts")) || []);
+
+        const cartProductsWithDetails = cartProducts.map(item => ({
+            ...item,
+            paymentMethod: paymentMethod,
+            placedAt: orderTimestamp
+        }));
+
+        const updatedOrders = [...existingOrders, ...cartProductsWithDetails];
+        
+        if (window.UserSession) {
+            window.UserSession.saveOrders(updatedOrders);
+            window.UserSession.setScoped("selectedPaymentMethod", paymentMethod);
+            window.UserSession.setScoped("orderPlacedAt", orderTimestamp);
+            window.UserSession.removeScoped("orderDeliveryStatus");
+        }
         localStorage.setItem("orderedProducts", JSON.stringify(updatedOrders));
-
+        localStorage.setItem("selectedPaymentMethod", paymentMethod);
+        localStorage.setItem("orderPlacedAt", orderTimestamp);
         localStorage.removeItem(cartKey);
+        localStorage.removeItem("orderDeliveryStatus");
+        localStorage.removeItem("orderCanceled");
 
-        // Keep address and phone number
-        let activeAddress = localStorage.getItem("activeAddress");
-        let activePhone = localStorage.getItem("activeNumber");
-
-        localStorage.setItem("activeAddress", activeAddress);
-        localStorage.setItem("activeNumber", activePhone);
+        if (userEmail) {
+            fetch("/orders/place", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: userEmail,
+                    cart: cartProductsWithDetails,
+                    paymentMethod: paymentMethod,
+                    placedAt: orderTimestamp
+                })
+            }).catch(e => console.warn("Failed to save order to server:", e));
+        }
 
         const loadingScreen = document.getElementById("loading-screen");
         const loadingText = document.getElementById("loading-text");
 
         loadingScreen.classList.remove("hidden");
-
-        setTimeout(() => {
-            loadingText.textContent = "Your order has been confirmed!";
-        }, 5000);
-
-        setTimeout(() => {
-            loadingText.textContent = "Wait for confirmation from our delivery partner...";
-        }, 6000);
+        loadingText.textContent = "Your order has been confirmed!";
 
         setTimeout(() => {
             window.location.href = "orderedview.html";
-        }, 9000);
+        }, 1500);
 
     } else {
         alert("Your cart is empty!");
@@ -1066,13 +1085,14 @@ window.onload = () => {
 
 // Profile Check
 function checkMissingInfo() {
-    let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-    let activeAddress = localStorage.getItem("activeAddress");
-    let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-    let activeNumber = localStorage.getItem("activeNumber");
-    let savedImage = localStorage.getItem("profileImage");
-    let savedLocations = JSON.parse(localStorage.getItem("savedAddresses")) || [];
-    let orderedProducts = JSON.parse(localStorage.getItem("orderedProducts") || "[]");
+    let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
+    let activeAddress = window.UserSession ? window.UserSession.getActiveAddress() : null;
+    let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
+    let activeNumber = window.UserSession ? window.UserSession.getActivePhone() : null;
+    let currentEmail = window.UserSession ? window.UserSession.getEmail() : "";
+    let savedImage = currentEmail ? localStorage.getItem(currentEmail + "_profileImage") : null;
+    let savedLocations = window.UserSession ? window.UserSession.getScoped("savedAddresses", []) : [];
+    let orderedProducts = window.UserSession ? window.UserSession.getOrders() : [];
 
     let hasAddress = activeAddress && savedAddresses.length > 0;
     let hasPhone = activeNumber && savedNumbers.length > 0;

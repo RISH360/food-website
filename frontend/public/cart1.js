@@ -1,6 +1,6 @@
 function addToCart() {
-    const userEmail = sessionStorage.getItem("profileEmail");
-    const cartKey = `cartProducts_${userEmail}`;
+    const userEmail = window.UserSession ? window.UserSession.getEmail() : (sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail"));
+    const cartKey = userEmail ? `cartProducts_${userEmail}` : `cartProducts_guest`;
     let cart = JSON.parse(localStorage.getItem(cartKey)) || [];
 
     const cartProduct = {

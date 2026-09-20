@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Payment Options</title>
+    <script src="user-session.js"></script>
     <script src="footer.js" defer></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
@@ -318,6 +319,9 @@ hr {
 
 <script>
 function selectPayment(method) {
+    if (window.UserSession) {
+        window.UserSession.setScoped("selectedPaymentMethod", method);
+    }
     localStorage.setItem("selectedPaymentMethod", method);
     window.location.href = "cart.html"; // Redirect back to cart
 }

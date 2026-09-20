@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile Settings</title>
+    <script src="user-session.js"></script>
     <script src="footer.js" defer></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
@@ -65,19 +66,112 @@
         }
 
         .profile-name-container {
-    width: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-}
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin-top: 8px;
+        }
 
-.profile-name-container h2 {
-    margin: 0;
-    font-size: 18px;
-    text-align: center; /* Ensure centering */
-    width: 100%;
-}
+        .profile-name-container h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: bold;
+            color: #222;
+            text-align: center;
+            width: 100%;
+        }
+
+        .edit-profile-btn {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #ffe3e3;
+            color: #d93838;
+            border: 1px solid #ffb8b8;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .edit-profile-btn:hover {
+            background: #ffd0d0;
+            transform: scale(1.05);
+        }
+
+        .dark-mode .edit-profile-btn {
+            background: #2d2222;
+            color: #ff9e9e;
+            border-color: #553333;
+        }
+
+        .profile-details-list {
+            margin: 14px auto 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            align-items: center;
+            width: 100%;
+            max-width: 440px;
+        }
+
+        .profile-detail-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 90%;
+            background: #f8f8f8;
+            padding: 8px 16px;
+            border-radius: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+
+        .detail-prefix {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .detail-val {
+            font-weight: 600;
+            color: #222;
+            word-break: break-all;
+            text-align: right;
+        }
+
+        .dark-mode .profile-card {
+            background: #1e1e1e;
+        }
+
+        .dark-mode .profile-name-container h2 {
+            color: #fff;
+        }
+
+        .dark-mode .profile-detail-row {
+            background: #2b2b2b;
+            box-shadow: none;
+            border: 1px solid #3d3d3d;
+        }
+
+        .dark-mode .detail-prefix {
+            color: #aaa;
+        }
+
+        .dark-mode .detail-val {
+            color: #f1f1f1;
+        }
 
 
         .fullscreen-overlay {
@@ -582,15 +676,29 @@ label {
         </a>
     </div>
     <div class="profile-card">
-        <img id="profileImg" src="" alt="Profile Image">
+        <a href="profile-edit.html" class="edit-profile-btn" title="Edit Profile Details">✏️ Edit</a>
+        <img id="profileImg" src="static/profileupdate.png" alt="Profile Image">
         
         <div class="profile-name-container">
-            <h2 id="profileName">not set</h2>
+            <h2 id="profileName">Loading profile...</h2>
         </div>
     
-        <p id="profileEmail">not set</p>
-        <p id="profilePhone">not set</p>
-        <a href="profile-edit.html" class="edit-profile">✏️</a>
+        <div class="profile-details-list">
+            <div class="profile-detail-row">
+                <span class="detail-prefix">
+                    <span>✉️</span>
+                    <span>Gmail:</span>
+                </span>
+                <span id="profileEmail" class="detail-val">Loading...</span>
+            </div>
+            <div class="profile-detail-row">
+                <span class="detail-prefix">
+                    <span>📞</span>
+                    <span>Mobile:</span>
+                </span>
+                <span id="profilePhone" class="detail-val">Loading...</span>
+            </div>
+        </div>
     
         <div class="profile-actions">
             <a href="money.html"><button><img src="static/pngwing.com (86).png" class="money-icon"> Money</button></a>
@@ -697,94 +805,123 @@ label {
     input.focus();
 }
 
+function renderProfileDetails(name, email, phone, imgSrc) {
+    let profileImg = document.getElementById("profileImg");
+    let profileEmail = document.getElementById("profileEmail");
+    let profilePhone = document.getElementById("profilePhone");
+    let profileName = document.getElementById("profileName");
+
+    const defaultImage = "static/profileupdate.png";
+
+    if (profileName) {
+        profileName.textContent = (name && name.trim()) ? name.trim() : "User";
+    }
+    if (profileEmail) {
+        profileEmail.textContent = (email && email.trim()) ? email.trim() : "Not linked";
+    }
+    if (profilePhone) {
+        profilePhone.textContent = (phone && phone.trim()) ? phone.trim() : "Not linked";
+    }
+    if (profileImg) {
+        const cleanEmail = (email || "").trim().toLowerCase();
+        const savedImage = cleanEmail ? localStorage.getItem(cleanEmail + "_profileImage") : null;
+        profileImg.src = imgSrc || savedImage || defaultImage;
+    }
+}
+
+async function fetchAndDisplayUserProfile() {
+    // 1. First display cached values immediately so page never flashes blank
+    let cachedName = window.UserSession ? window.UserSession.getName() : (sessionStorage.getItem("profileName") || localStorage.getItem("profileName") || "");
+    let cachedEmail = window.UserSession ? window.UserSession.getEmail() : (sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail") || "");
+    let cachedPhone = window.UserSession ? window.UserSession.getPhone() : (sessionStorage.getItem("profilePhone") || localStorage.getItem("profilePhone") || "");
+
+    renderProfileDetails(cachedName, cachedEmail, cachedPhone);
+
+    // 2. Fetch authoritative profile from server database (db.json)
+    if (cachedEmail || cachedPhone) {
+        try {
+            const query = cachedEmail ? `email=${encodeURIComponent(cachedEmail)}` : `mobile=${encodeURIComponent(cachedPhone)}`;
+            const res = await fetch(`/user/profile?${query}`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.success && data.user) {
+                    const u = data.user;
+                    const resolvedName = u.nickName || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.firstName || cachedName || "User";
+                    const resolvedEmail = u.email || cachedEmail || "";
+                    const resolvedPhone = u.mobile || cachedPhone || "";
+
+                    if (window.UserSession) {
+                        window.UserSession.setUser({
+                            nickName: resolvedName,
+                            email: resolvedEmail,
+                            mobile: resolvedPhone
+                        });
+                    } else {
+                        sessionStorage.setItem("profileName", resolvedName);
+                        sessionStorage.setItem("profileEmail", resolvedEmail);
+                        sessionStorage.setItem("profilePhone", resolvedPhone);
+                        localStorage.setItem("profileName", resolvedName);
+                        localStorage.setItem("profileEmail", resolvedEmail);
+                        localStorage.setItem("profilePhone", resolvedPhone);
+                    }
+
+                    renderProfileDetails(resolvedName, resolvedEmail, resolvedPhone, u.profilePic);
+                }
+            }
+        } catch (err) {
+            console.warn("Could not sync profile with server:", err);
+        }
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function () {
     let profileImg = document.getElementById("profileImg");
     let overlay = document.getElementById("fullscreenOverlay");
     let fullscreenImg = document.getElementById("fullscreenImg");
-    let profileEmail = document.getElementById("profileEmail");
-    let profilePhone = document.getElementById("profilePhone");
-    let profileName = document.getElementById("profileName");
-    let changeImageBtn = document.getElementById("changeImageBtn");
-    let imageInput = document.getElementById("imageInput");
-    let removeImageBtn = document.getElementById("removeImageBtn");
 
-    // Default image when no profile picture is set
-    const defaultImage = "static/profileupdate.png";
+    // Profile full-screen preview
+    if (profileImg && overlay && fullscreenImg) {
+        profileImg.addEventListener("click", function () {
+            fullscreenImg.src = profileImg.src;
+            overlay.classList.add("show");
+        });
 
-    // Load stored data from sessionStorage
-    let savedName = sessionStorage.getItem("profileName");
-    let savedEmail = sessionStorage.getItem("profileEmail");
-    let savedPhone = sessionStorage.getItem("profilePhone");
-
-    // Load profile image from localStorage (stored under the user's email)
-    let savedImage = localStorage.getItem(savedEmail + "_profileImage");
-
-    // Set profile image (use default if none found)
-    if (savedImage && savedImage !== "") {
-        profileImg.src = savedImage;
-    } else {
-        profileImg.src = defaultImage; // Set default image if no image found
+        overlay.addEventListener("click", function (event) {
+            if (event.target !== fullscreenImg) {
+                overlay.classList.remove("show");
+            }
+        });
     }
 
-    // Set profile details
-    profileName.textContent = savedName || "No name provided";
-    profileEmail.textContent = savedEmail || "No email provided";
-    profilePhone.textContent = savedPhone || "No phone number provided";
+    // Load and render user profile data
+    fetchAndDisplayUserProfile();
 
-    // Profile image full-screen preview
-    profileImg.addEventListener("click", function () {
-        fullscreenImg.src = profileImg.src;
-        overlay.classList.add("show");
-    });
-
-    overlay.addEventListener("click", function (event) {
-        if (event.target !== fullscreenImg) {
-            overlay.classList.remove("show");
-        }
-    });
-
-    // When the user clicks the "Change Image" button, trigger the file input click
-    changeImageBtn.addEventListener("click", function () {
-        imageInput.click();
-    });
-
-    // When the user selects a new image, update the profile image
-    imageInput.addEventListener("change", function (event) {
-        let file = event.target.files[0];
-        if (file) {
-            let reader = new FileReader();
-            reader.onload = function (e) {
-                profileImg.src = e.target.result;
-
-                // Save the new profile image to localStorage under the user's email
-                if (savedEmail) {
-                    localStorage.setItem(savedEmail + "_profileImage", e.target.result);
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
-    // When the user clicks the "Remove Image" button, reset the profile image to the default
-    removeImageBtn.addEventListener("click", function () {
-        profileImg.src = defaultImage;
-
-        // Remove the profile image from localStorage
-        if (savedEmail) {
-            localStorage.removeItem(savedEmail + "_profileImage");
+    // Listen to background session updates
+    window.addEventListener("userSessionUpdated", function (e) {
+        if (e.detail) {
+            const u = e.detail;
+            const name = u.nickName || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.firstName || "";
+            renderProfileDetails(name, u.email, u.mobile, u.profilePic);
         }
     });
 });
-
-
 </script>
-
 <script>
     function loadAddresses() {
-        let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-        let activeAddress = localStorage.getItem("activeAddress");
+        let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
+        let activeAddress = window.UserSession ? window.UserSession.getActiveAddress() : null;
         let addressList = document.getElementById("addressList");
         addressList.innerHTML = "";
+
+        if (savedAddresses.length === 0) {
+            addressList.innerHTML = `
+                <div class="container" style="text-align:center; padding: 20px; color: #666;">
+                    <p>No addresses saved yet.</p>
+                    <p style="font-size: 13px; color: #888;">Click "Add New Address" below to save your delivery location.</p>
+                </div>
+            `;
+            return;
+        }
 
         savedAddresses.forEach((address, index) => {
             let addressContainer = document.createElement("div");
@@ -810,7 +947,6 @@ document.addEventListener("DOMContentLoaded", function () {
         <button class="btn btn-danger" onclick="deleteAddress(${index})">Delete</button>
     </div>
 </div>
-
 
                 <div id="edit-mode-${index}" style="display: none;">
                     <label>House No</label>
@@ -843,9 +979,8 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         // If no active address is set, set the first address as active
-        if (savedAddresses.length > 0 && !activeAddress) {
-            localStorage.setItem("activeAddress", savedAddresses[0].houseNo);
-            loadAddresses();
+        if (savedAddresses.length > 0 && !activeAddress && window.UserSession) {
+            window.UserSession.setActiveAddress(savedAddresses[0].houseNo);
         }
     }
 
@@ -860,7 +995,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function saveEdit(index) {
-        let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
+        let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
 
         savedAddresses[index] = {
             houseNo: document.getElementById(`houseNo-${index}`).value,
@@ -871,113 +1006,98 @@ document.addEventListener("DOMContentLoaded", function () {
             addressType: document.getElementById(`addressType-${index}`).value
         };
 
-        localStorage.setItem("addresses", JSON.stringify(savedAddresses));
-
-        // If no active address exists, set the first address as active
-        if (!localStorage.getItem("activeAddress")) {
-            localStorage.setItem("activeAddress", savedAddresses[0].houseNo);
+        if (window.UserSession) {
+            window.UserSession.saveAddresses(savedAddresses);
         }
 
         loadAddresses();
     }
 
     function deleteAddress(index) {
-        let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
+        let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
         savedAddresses.splice(index, 1);
-        localStorage.setItem("addresses", JSON.stringify(savedAddresses));
-
-        // Remove active address if it was deleted
-        let activeAddress = localStorage.getItem("activeAddress");
-        if (activeAddress && savedAddresses.every(addr => addr.houseNo !== activeAddress)) {
-            localStorage.removeItem("activeAddress");
+        if (window.UserSession) {
+            window.UserSession.saveAddresses(savedAddresses);
         }
-
         loadAddresses();
     }
 
     function setActive(index, btn) {
-        let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-        localStorage.setItem("activeAddress", savedAddresses[index].houseNo);
-
-        document.querySelectorAll(".set-active-btn").forEach(button => {
-            button.classList.remove("active-btn");
-            button.textContent = "Set Active";
-        });
-
-        btn.classList.add("active-btn");
-        btn.textContent = "Active";
+        let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
+        if (savedAddresses[index] && window.UserSession) {
+            window.UserSession.setActiveAddress(savedAddresses[index].houseNo);
+        }
+        loadAddresses();
     }
 
     document.addEventListener("DOMContentLoaded", loadAddresses);
 </script>
 <script>
 function loadNumbers() {
-let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-let activeNumber = localStorage.getItem("activeNumber");
-let phoneList = document.getElementById("phoneList");
+    let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
+    let activeNumber = window.UserSession ? window.UserSession.getActivePhone() : null;
+    let phoneList = document.getElementById("phoneList");
 
-phoneList.innerHTML = "";
+    phoneList.innerHTML = "";
 
-savedNumbers.forEach((number, index) => {
-    let numberContainer = document.createElement("div");
-    numberContainer.className = "container";
-    numberContainer.id = "number-" + index;
-
-    let isActive = number.number === activeNumber;
-
-    numberContainer.innerHTML = `
-        <div class="number-box">
-            <p>Phone: ${number.number}</p>
-
-            <div class="btn-container">
-                <button class="btn set-active-btn ${isActive ? 'active-btn' : ''}" 
-                    onclick="setActiveNumber(${index}, this)">
-                    ${isActive ? 'Active' : 'Set Active'}
-                </button>
-                <button class="btn btn-danger" onclick="deleteNumber(${index})">Delete</button>
+    if (savedNumbers.length === 0) {
+        phoneList.innerHTML = `
+            <div class="container" style="text-align:center; padding: 20px; color: #666;">
+                <p>No phone numbers saved yet.</p>
+                <p style="font-size: 13px; color: #888;">Click "Add New Mobile Number" below to save your contact number.</p>
             </div>
-        </div>
-    `;
+        `;
+        return;
+    }
 
-    phoneList.appendChild(numberContainer);
-});
+    savedNumbers.forEach((number, index) => {
+        let numberContainer = document.createElement("div");
+        numberContainer.className = "container";
+        numberContainer.id = "number-" + index;
 
-// If no active number is set, set the first number as active
-if (savedNumbers.length > 0 && !activeNumber) {
-    localStorage.setItem("activeNumber", savedNumbers[0].number);
-    loadNumbers();
-}
+        let isActive = number.number === activeNumber;
+
+        numberContainer.innerHTML = `
+            <div class="number-box">
+                <p>Phone: ${number.number}</p>
+
+                <div class="btn-container">
+                    <button class="btn set-active-btn ${isActive ? 'active-btn' : ''}" 
+                        onclick="setActiveNumber(${index}, this)">
+                        ${isActive ? 'Active' : 'Set Active'}
+                    </button>
+                    <button class="btn btn-danger" onclick="deleteNumber(${index})">Delete</button>
+                </div>
+            </div>
+        `;
+
+        phoneList.appendChild(numberContainer);
+    });
+
+    // If no active number is set, set the first number as active
+    if (savedNumbers.length > 0 && !activeNumber && window.UserSession) {
+        window.UserSession.setActivePhone(savedNumbers[0].number);
+    }
 }
 
 function deleteNumber(index) {
-let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-savedNumbers.splice(index, 1);
-localStorage.setItem("phoneNumbers", JSON.stringify(savedNumbers));
-
-let activeNumber = localStorage.getItem("activeNumber");
-if (activeNumber && savedNumbers.every(num => num.number !== activeNumber)) {
-    localStorage.removeItem("activeNumber");
-}
-
-loadNumbers();
+    let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
+    savedNumbers.splice(index, 1);
+    if (window.UserSession) {
+        window.UserSession.savePhoneNumbers(savedNumbers);
+    }
+    loadNumbers();
 }
 
 function setActiveNumber(index, btn) {
-let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-localStorage.setItem("activeNumber", savedNumbers[index].number);
-
-document.querySelectorAll(".set-active-btn").forEach(button => {
-    button.classList.remove("active-btn");
-    button.textContent = "Set Active";
-});
-
-btn.classList.add("active-btn");
-btn.textContent = "Active";
+    let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
+    if (savedNumbers[index] && window.UserSession) {
+        window.UserSession.setActivePhone(savedNumbers[index].number);
+    }
+    loadNumbers();
 }
 
 document.addEventListener("DOMContentLoaded", loadNumbers);
-
-
 </script>
 
 <footer class="footer">

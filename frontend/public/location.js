@@ -6,8 +6,8 @@ document.addEventListener("DOMContentLoaded", function() {
     const addLocationBtn = document.getElementById("addLocationBtn");
     const clearLocationsBtn = document.getElementById("clearLocationsBtn");
 
-    // Load saved locations from localStorage, or start empty
-    let savedLocations = JSON.parse(localStorage.getItem("savedAddresses")) || [];
+    // Load saved locations scoped to current user
+    let savedLocations = window.UserSession ? window.UserSession.getScoped("savedAddresses", []) : (JSON.parse(localStorage.getItem("savedAddresses")) || []);
 
     function updateLocationDropdown() {
         locationList.innerHTML = ""; // Clear existing locations
@@ -44,7 +44,11 @@ document.addEventListener("DOMContentLoaded", function() {
         const newLocation = locationInput.value.trim();
         if (newLocation && !savedLocations.includes(newLocation)) {
             savedLocations.push(newLocation);
-            localStorage.setItem("savedAddresses", JSON.stringify(savedLocations));
+            if (window.UserSession) {
+                window.UserSession.setScoped("savedAddresses", savedLocations);
+            } else {
+                localStorage.setItem("savedAddresses", JSON.stringify(savedLocations));
+            }
             updateLocationDropdown();
         }
     });
@@ -52,7 +56,11 @@ document.addEventListener("DOMContentLoaded", function() {
     // Clear all locations
     clearLocationsBtn.addEventListener("click", function() {
         savedLocations = [];
-        localStorage.setItem("savedAddresses", JSON.stringify(savedLocations));
+        if (window.UserSession) {
+            window.UserSession.setScoped("savedAddresses", savedLocations);
+        } else {
+            localStorage.setItem("savedAddresses", JSON.stringify(savedLocations));
+        }
         updateLocationDropdown();
     });
 

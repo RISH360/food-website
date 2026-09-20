@@ -252,10 +252,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const defaultImage = "static/profileupdate.png";
 
-    // Use sessionStorage to get the user's email
-    let savedEmail = sessionStorage.getItem("profileEmail");
-    let savedPhone = sessionStorage.getItem("profilePhone");
-    let savedName = sessionStorage.getItem("profileName");
+    // Use sessionStorage or localStorage to get the user's details
+    let savedEmail = sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail");
+    let savedPhone = sessionStorage.getItem("profilePhone") || localStorage.getItem("profilePhone");
+    let savedName = sessionStorage.getItem("profileName") || localStorage.getItem("profileName");
 
     // Use the email to store the profile picture separately for each user in localStorage
     let savedImage = localStorage.getItem(savedEmail + "_profileImage");
@@ -273,6 +273,35 @@ document.addEventListener("DOMContentLoaded", function () {
     if (savedEmail) emailDisplay.textContent = savedEmail;
     if (savedPhone) phoneDisplay.textContent = savedPhone;
     if (savedName) nameDisplay.textContent = savedName;
+
+    // Refresh from server database to ensure latest info
+    if (savedEmail || savedPhone) {
+        const query = savedEmail ? `email=${encodeURIComponent(savedEmail)}` : `mobile=${encodeURIComponent(savedPhone)}`;
+        fetch(`/user/profile?${query}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.user) {
+                    const u = data.user;
+                    const resolvedName = u.nickName || [u.firstName, u.lastName].filter(Boolean).join(" ") || u.firstName || savedName || "";
+                    if (resolvedName) {
+                        nameDisplay.textContent = resolvedName;
+                        sessionStorage.setItem("profileName", resolvedName);
+                        localStorage.setItem("profileName", resolvedName);
+                    }
+                    if (u.email) {
+                        emailDisplay.textContent = u.email;
+                        sessionStorage.setItem("profileEmail", u.email);
+                        localStorage.setItem("profileEmail", u.email);
+                    }
+                    if (u.mobile) {
+                        phoneDisplay.textContent = u.mobile;
+                        sessionStorage.setItem("profilePhone", u.mobile);
+                        localStorage.setItem("profilePhone", u.mobile);
+                    }
+                }
+            })
+            .catch(() => {});
+    }
 
     // When the user clicks on the "Change Image" button, trigger the file input click
     changeImageBtn.addEventListener("click", function () {

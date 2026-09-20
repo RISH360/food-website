@@ -70,10 +70,9 @@
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            document.getElementById("userName").textContent = sessionStorage.getItem("profileName") || "Not available";
-            document.getElementById("userEmail").textContent = sessionStorage.getItem("profileEmail") || "Not available";
-            document.getElementById("userPhone").textContent = sessionStorage.getItem("profilePhone") || "Not available";
-
+            document.getElementById("userName").textContent = sessionStorage.getItem("profileName") || localStorage.getItem("profileName") || "Not available";
+            document.getElementById("userEmail").textContent = sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail") || "Not available";
+            document.getElementById("userPhone").textContent = sessionStorage.getItem("profilePhone") || localStorage.getItem("profilePhone") || "Not available";
         });
 
         function editProfile() {

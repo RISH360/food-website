@@ -2,127 +2,319 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Your Coupons</title>
-        <script src="appearance.js" defer></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Coupons</title>
+    <script src="user-session.js"></script>
+    <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
 
-        <style>
-            body {
-                font-family: Arial, sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center; /* Centering the content */
-                padding-top: 0px;
-                background: #ebadad;
-                flex-direction: column; /* Arrange the content vertically */
-                margin: 0; /* Remove default margin */
-            }
-    
-            /* Back Button */
-            .back-logo {
-                position: absolute;
-                top: 30px;
-                left: 20px;
-            }
-    
-            .back-loco img {
-                width: 10px;
-                height: auto;
-                cursor: pointer;
-            }
-    
-            .Coupons-title {
-    width: 90%;
-    max-width: 500px;
-    font-size: 20px;
-    font-weight: bold;
-    margin-top: 60px; /* Reduce this if needed */
-    margin-bottom: 5px; /* Reduced to bring it closer to the container */
-    text-align: left;
-    margin-left: 10px;
-}
-    
-            /* Coupon Container */
-            .container {
-                background-color: #fff;
-                border: 2px solid #ddd;
-                border-radius: 10px;
-                padding: 20px;
-                width: 85%;
-                max-width: 900px;
-                text-align: center;
-                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-            }
-    
-            .coupon-image {
-                width: 100px;
-                border-radius: 8px;
-                margin-bottom: 10px;
-            }
-    
-            .coupon-code {
-                color: #000000;
-                padding: 8px 15px;
-                border-radius: 5px;
-                display: inline-block;
-                margin-top: 10px;
-            }
-    
-            .copy-btn {
-                margin-top: 10px;
-                padding: 6px 12px;
-                background-color: #4CAF50;
-                color: #fff;
-                border: none;
-                border-radius: 5px;
-                cursor: pointer;
-            }
-        </style>
-    </head>
-    <body>
-    
-        <div class="back-logo">
-            <a href="settings.html" class="back-log">
-                <div class="back-loco">
-                    <img src="static/pngkey.com-menu-icon-png-9694963.png" alt="back-button">
-                </div>
-            </a>
-        </div>
-    
-        <div class="Coupons-title">Coupons</div>
-        <!-- Coupon details container -->
-        <div class="container">
-            <div id="couponDetails">Loading...</div>
-        </div>
-    
-        <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                const couponDetails = document.getElementById("couponDetails");
-                const storedCoupon = JSON.parse(localStorage.getItem("storedCoupon"));
-    
-                if (storedCoupon) {
-                    couponDetails.innerHTML = `
-                        <img src="${storedCoupon.imagePath}" alt="Coupon Image" class="coupon-image">
-                        <p>${storedCoupon.text}</p>
-                        <div class="coupon-code" id="couponCode">${storedCoupon.code}</div>
-                        <button class="copy-btn" onclick="copyCode('${storedCoupon.code}')">Copy Code</button>
-                    `;
-                } else {
-                    couponDetails.textContent = "No coupon details available.";
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding-top: 20px;
+            background: #ebadad;
+            flex-direction: column;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        /* Back Button */
+        .back-logo {
+            position: absolute;
+            top: 30px;
+            left: 20px;
+        }
+
+        .back-loco img {
+            width: 10px;
+            height: auto;
+            cursor: pointer;
+        }
+
+        .Coupons-title {
+            width: 90%;
+            max-width: 500px;
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 60px;
+            margin-bottom: 15px;
+            text-align: left;
+            color: #222;
+        }
+
+        .dark-mode .Coupons-title {
+            color: #fff;
+        }
+
+        /* Coupon Container */
+        .container {
+            background-color: #fff;
+            border: 2px solid #ddd;
+            border-radius: 16px;
+            padding: 24px;
+            width: 85%;
+            max-width: 480px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+        }
+
+        .dark-mode .container {
+            background-color: #1f1f1f;
+            border-color: #333;
+            color: #eee;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .coupon-image {
+            width: 110px;
+            height: auto;
+            border-radius: 10px;
+            margin: 10px auto;
+            display: block;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .unlocked-badge {
+            display: inline-block;
+            background: #e8f8f5;
+            color: #16a085;
+            border: 1px solid #a3e4d7;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 12px;
+        }
+
+        .dark-mode .unlocked-badge {
+            background: #13382c;
+            color: #2ecc71;
+            border-color: #1e824c;
+        }
+
+        .coupon-text {
+            font-size: 16px;
+            color: #333;
+            margin: 10px 0;
+            line-height: 1.4;
+        }
+
+        .dark-mode .coupon-text {
+            color: #ddd;
+        }
+
+        .code-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 16px auto;
+            flex-wrap: wrap;
+        }
+
+        .coupon-code {
+            color: #d63031;
+            background: #ffeaa7;
+            padding: 9px 18px;
+            border-radius: 8px;
+            display: inline-block;
+            font-family: monospace;
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border: 1px dashed #fdcb6e;
+        }
+
+        .dark-mode .coupon-code {
+            background: #2d3436;
+            color: #fab1a0;
+            border-color: #636e72;
+        }
+
+        .copy-btn {
+            padding: 9px 18px;
+            background-color: #2ed573;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        .copy-btn:hover {
+            background-color: #26af5f;
+            transform: translateY(-1px);
+        }
+
+        .coupon-subnote {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 12px;
+        }
+
+        /* Locked State */
+        .locked-card, .empty-card {
+            padding: 15px 5px;
+        }
+
+        .lock-icon, .empty-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .locked-tag {
+            display: inline-block;
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .dark-mode .locked-tag {
+            background: #3e2723;
+            color: #ffe082;
+            border-color: #5d4037;
+        }
+
+        .locked-card h3, .empty-card h3 {
+            margin: 8px 0;
+            font-size: 18px;
+            color: #2d3436;
+        }
+
+        .dark-mode .locked-card h3,
+        .dark-mode .empty-card h3 {
+            color: #f5f6fa;
+        }
+
+        .locked-card p, .empty-card p {
+            font-size: 14px;
+            color: #636e72;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .dark-mode .locked-card p,
+        .dark-mode .empty-card p {
+            color: #b2bec3;
+        }
+
+        .action-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 14px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+        }
+
+        .no-coupon-message {
+            font-size: 16px;
+            color: #555;
+            margin: 20px 0;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        .dark-mode .no-coupon-message {
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="back-logo">
+        <a href="settings.html" class="back-log">
+            <div class="back-loco">
+                <img src="static/pngkey.com-menu-icon-png-9694963.png" alt="back-button">
+            </div>
+        </a>
+    </div>
+
+    <div class="Coupons-title">Coupons</div>
+
+    <!-- Coupon details container -->
+    <div class="container">
+        <div id="couponDetails">Loading coupons...</div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", async function () {
+            const couponDetails = document.getElementById("couponDetails");
+
+            // Sync latest user state if logged in
+            if (window.UserSession && typeof window.UserSession.syncWithServer === "function") {
+                try {
+                    await window.UserSession.syncWithServer();
+                } catch (e) {
+                    console.warn("Server sync skipped:", e);
                 }
-            });
-    
-            function copyCode(code) {
-                navigator.clipboard.writeText(code).then(() => {
-                    alert("Coupon code copied successfully!");
-                });
             }
-        </script>
-    </body>
-    </html>
-    
+
+            let coupon = null;
+            if (window.UserSession) {
+                coupon = window.UserSession.getCoupon();
+            }
+            if (!coupon) {
+                try {
+                    coupon = JSON.parse(localStorage.getItem("storedCoupon"));
+                } catch (e) {
+                    coupon = null;
+                }
+            }
+
+            const isDelivered = window.UserSession
+                ? window.UserSession.isOrderDelivered()
+                : (coupon && coupon.isDelivered === true);
+
+            const activeOrders = window.UserSession
+                ? window.UserSession.getOrders()
+                : (JSON.parse(localStorage.getItem("orderedProducts") || "[]"));
+
+            const hasActivePendingOrder = Array.isArray(activeOrders) && activeOrders.length > 0 && !isDelivered;
+
+            // ✅ ONLY show coupon code AFTER delivery
+            if (coupon && (coupon.isDelivered === true || isDelivered) && coupon.code) {
+                couponDetails.innerHTML = `
+                    <div class="unlocked-badge">🎉 Unlocked After Delivery</div>
+                    <img src="${coupon.imagePath}" alt="Coupon Image" class="coupon-image">
+                    <p class="coupon-text"><strong>${coupon.text}</strong></p>
+                    <div class="code-container">
+                        <span class="coupon-code" id="couponCode">${coupon.code}</span>
+                        <button class="copy-btn" onclick="copyCode('${coupon.code}')">Copy Code</button>
+                    </div>
+                    <p class="coupon-subnote">✓ Verified Reward from your delivered order. Use on your next order!</p>
+                `;
+            } else {
+                // If there is no coupon code, show ONLY: "You have not yet received any coupon"
+                couponDetails.innerHTML = `
+                    <p class="no-coupon-message">You have not yet received any coupon</p>
+                `;
+            }
+        });
+
+        function copyCode(code) {
+            navigator.clipboard.writeText(code).then(() => {
+                alert("Coupon code copied successfully!");
+            });
+        }
+    </script>
+</body>
+</html>

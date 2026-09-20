@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Settings Page</title>
     <link href="https://fonts.googleapis.com/css2?family=Alike+Angular&family=Alkatra&display=swap" rel="stylesheet">
+    <script src="user-session.js"></script>
     <script src="footer.js" defer></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
@@ -338,15 +339,22 @@
             const logoutButton = document.querySelector(".button");
 
             logoutButton.addEventListener("click", function (event) {
-                event.preventDefault(); // Prevent immediate navigation
+                event.preventDefault();
 
-                // Show loading screen before redirect
                 const loadingScreen = document.getElementById("loading-screen");
-                loadingScreen.classList.remove("hidden"); // Show loading screen
+                if (loadingScreen) loadingScreen.classList.remove("hidden");
 
                 setTimeout(() => {
-                    window.location.href = "N-foodloginpage.html"; // Redirect after 5 seconds
-                }, 5000); // 5 seconds delay
+                    if (window.UserSession) {
+                        window.UserSession.logout();
+                    } else {
+                        sessionStorage.clear();
+                        localStorage.removeItem("profileEmail");
+                        localStorage.removeItem("profilePhone");
+                        localStorage.removeItem("profileName");
+                        window.location.href = "N-foodloginpage.html";
+                    }
+                }, 800);
             });
         });
     </script>
@@ -395,13 +403,14 @@ function typeMessage(text, duration, callback) {
 window.onload = checkAssistStatus;
 
 function checkMissingInfo() {
-    let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-    let activeAddress = localStorage.getItem("activeAddress");
-    let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-    let activeNumber = localStorage.getItem("activeNumber");
-    let savedImage = localStorage.getItem("profileImage");
-    let savedLocations = JSON.parse(localStorage.getItem("savedAddresses")) || [];
-    let orderedProducts = JSON.parse(localStorage.getItem("orderedProducts") || "[]");
+    let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
+    let activeAddress = window.UserSession ? window.UserSession.getActiveAddress() : null;
+    let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
+    let activeNumber = window.UserSession ? window.UserSession.getActivePhone() : null;
+    let currentEmail = window.UserSession ? window.UserSession.getEmail() : "";
+    let savedImage = currentEmail ? localStorage.getItem(currentEmail + "_profileImage") : null;
+    let savedLocations = window.UserSession ? window.UserSession.getScoped("savedAddresses", []) : [];
+    let orderedProducts = window.UserSession ? window.UserSession.getOrders() : [];
 
     let hasAddress = activeAddress && savedAddresses.length > 0;
     let hasPhone = activeNumber && savedNumbers.length > 0;

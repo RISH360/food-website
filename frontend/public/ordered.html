@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ordered Items</title>
+    <script src="user-session.js"></script>
     <script src="footer.js" defer></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
@@ -226,7 +227,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const orderContainer = document.getElementById('order-container');
-            const orderedProducts = JSON.parse(localStorage.getItem("orderedProducts")) || [];
+            const orderedProducts = window.UserSession ? window.UserSession.getOrders() : (JSON.parse(localStorage.getItem("orderedProducts")) || []);
 
             if (orderedProducts.length === 0) {
                 orderContainer.innerHTML = `

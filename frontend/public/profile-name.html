@@ -234,8 +234,8 @@
           const loadingScreen = document.getElementById("loading-screen");
           loadingScreen.classList.remove("hidden");
       
-          // Get the logged-in email from sessionStorage
-          const email = sessionStorage.getItem("profileEmail");
+          // Get the logged-in email from sessionStorage or localStorage
+          const email = sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail");
       
           if (!email) {
             alert("User email not found. Cannot update profile.");

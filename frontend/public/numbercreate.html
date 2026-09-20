@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Phone Number</title>
+    <script src="user-session.js"></script>
     <style>
        body {
     font-family: Arial, sans-serif;
@@ -104,7 +105,7 @@
                 return;
             }
 
-            let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
+            let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
 
             // Limit to 2 numbers
             if (savedNumbers.length >= 2) {
@@ -113,7 +114,11 @@
             }
 
             savedNumbers.push({ number: phoneNumber });
-            localStorage.setItem("phoneNumbers", JSON.stringify(savedNumbers));
+            if (window.UserSession) {
+                window.UserSession.savePhoneNumbers(savedNumbers);
+            } else {
+                localStorage.setItem("phoneNumbers", JSON.stringify(savedNumbers));
+            }
 
             // Redirect back to the main page
             window.location.href = "profile.html";

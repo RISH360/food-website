@@ -38,15 +38,21 @@ document.addEventListener("DOMContentLoaded", function () {
             if (response.ok) {
                 const result = await response.json();
 
-                // ✅ Save data in sessionStorage
-                sessionStorage.setItem("profileName", result.nickName);
-                sessionStorage.setItem("profileEmail", result.email);
-                sessionStorage.setItem("profilePhone", result.mobile);
+                // ✅ Save data via UserSession to ensure account isolation
+                if (window.UserSession) {
+                    window.UserSession.setUser(result);
+                } else {
+                    sessionStorage.setItem("profileName", result.nickName);
+                    sessionStorage.setItem("profileEmail", result.email);
+                    sessionStorage.setItem("profilePhone", result.mobile);
+                    localStorage.setItem("profileName", result.nickName);
+                    localStorage.setItem("profileEmail", result.email);
+                    localStorage.setItem("profilePhone", result.mobile);
+                }
 
                 setTimeout(() => {
-                    alert("Login successful!");
                     window.location.href = "N-foodinterfacepage.html";
-                }, 1000); // short delay
+                }, 600);
             } else {
                 const result = await response.text();
                 passwordError.textContent = result;

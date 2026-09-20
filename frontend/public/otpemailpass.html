@@ -3,6 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OTP Verification</title>
+    <script src="user-session.js"></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
 
@@ -312,6 +313,9 @@
         
                 setTimeout(() => {
                     alert("OTP Verified!");
+                    if (window.UserSession) {
+                        window.UserSession.clearLegacyKeys();
+                    }
                     window.location.href = "N-foodinterfacepage.html";
                     loadingScreen.classList.add("hidden");
                 }, 1000);

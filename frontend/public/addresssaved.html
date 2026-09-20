@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saved Addresses</title>
+    <script src="user-session.js"></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
     <style>
@@ -160,8 +161,8 @@
     
     <script>
         function loadAddresses() {
-            let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-            let activeAddress = localStorage.getItem("activeAddress");
+            let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
+            let activeAddress = window.UserSession ? window.UserSession.getActiveAddress() : null;
             let addressList = document.getElementById("addressList");
             let changeBtn = document.getElementById("changeBtn");
             addressList.innerHTML = "";

@@ -7,6 +7,7 @@ import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from "fs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -99,17 +100,25 @@ app.post("/signup", async (req, res) => {
 
 // Confirm Password Route
 app.post("/confirm-password", async (req, res) => {
-    const { password } = req.body;
+    const { email, password } = req.body;
 
     if (!password) return res.status(400).send("Password is required");
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await db.read();
-    const users = db.data.users;
-    if (users.length === 0) return res.status(400).send("No user found");
+    let user;
+    if (email) {
+        const normalizedEmail = email.trim().toLowerCase();
+        user = db.data.users.find(u => u.email?.trim().toLowerCase() === normalizedEmail);
+    }
+    if (!user && db.data.users.length > 0) {
+        user = db.data.users[db.data.users.length - 1];
+    }
 
-    users[users.length - 1].password = hashedPassword;
+    if (!user) return res.status(400).send("No user found");
+
+    user.password = hashedPassword;
     await db.write();
 
     res.status(200).send("Password saved");
@@ -139,10 +148,14 @@ app.post("/login", async (req, res) => {
         return res.status(401).send("Invalid email/mobile or password");
     }
 
+    const displayName = user.nickName || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.firstName || "User";
     return res.status(200).json({
-        nickName: user.nickName,
-        email: user.email,
-        mobile: user.mobile
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        nickName: displayName,
+        email: user.email || "",
+        mobile: user.mobile || "",
+        orders: user.orders || []
     });
 });
 
@@ -183,26 +196,45 @@ app.post("/register-mobile", async (req, res) => {
     const existingUser = db.data.users.find(user => user.mobile === mobile);
 
     if (existingUser) {
-        return res.status(409).json({ success: false, message: "This mobile number is already registered." });
+        const displayName = existingUser.nickName || [existingUser.firstName, existingUser.lastName].filter(Boolean).join(" ") || existingUser.firstName || "User";
+        return res.status(200).json({
+            success: true,
+            isExistingUser: true,
+            message: "Mobile verified successfully!",
+            user: {
+                firstName: existingUser.firstName || "",
+                lastName: existingUser.lastName || "",
+                nickName: displayName,
+                email: existingUser.email || "",
+                mobile: existingUser.mobile,
+                orders: existingUser.orders || []
+            }
+        });
     }
 
-    // Add the mobile number to db.json (You can add additional fields if needed later)
+    // Add the mobile number to db.json
     const newUser = {
-        firstName: "New",  // Placeholder for first name
-        lastName: "User",  // Placeholder for last name
-        nickName: "newuser",  // Placeholder for nickname
-        email: "",  // Placeholder for email
+        firstName: "New",
+        lastName: "User",
+        nickName: "newuser",
+        email: "",
         mobile: mobile,
-        password: "",  // Placeholder for password (or you can add registration flow here)
+        password: "",
         cart: [],
         orders: [],
-        addresses: []
+        addresses: [],
+        phoneNumbers: [{ number: mobile }],
+        activeNumber: mobile
     };
 
     db.data.users.push(newUser);
     await db.write();
 
-    res.status(200).json({ success: true, message: "Mobile number registered successfully!" });
+    res.status(200).json({
+        success: true,
+        isExistingUser: false,
+        message: "Mobile number registered successfully!"
+    });
 });
 
 app.post("/update-user-details", async (req, res) => {
@@ -272,42 +304,47 @@ app.post("/reset-password", async (req, res) => {
 });
 
 app.post("/update-nickname", async (req, res) => {
-    const { email, newNickname } = req.body;
+    const { email, mobile, newNickname } = req.body;
 
-    if (!email || !newNickname) {
-        return res.status(400).send("Invalid data");
+    if (!newNickname) {
+        return res.status(400).send("New nickname required");
     }
 
-    await db.read(); // Read latest data
-    const user = db.data.users.find(u => u.email === email);
+    await db.read();
+    const normalizedEmail = (email || "").trim().toLowerCase();
+    const normalizedMobile = (mobile || "").trim();
+
+    const user = db.data.users.find(u =>
+        (normalizedEmail && u.email?.trim().toLowerCase() === normalizedEmail) ||
+        (normalizedMobile && u.mobile?.trim() === normalizedMobile)
+    );
 
     if (!user) {
         return res.status(404).send("User not found");
     }
 
-    user.nickName = newNickname;
-    await db.write(); // Save changes to db.json
+    user.nickName = newNickname.trim();
+    await db.write();
 
     res.send("Nickname updated successfully");
 });
 
 app.post("/update-email", async (req, res) => {
-    const { oldEmail, newEmail } = req.body;
+    const { oldEmail, newEmail, mobile } = req.body;
 
-    if (!oldEmail || !newEmail) {
-        return res.status(400).send("Old and new email required");
+    if (!newEmail) {
+        return res.status(400).send("New email required");
     }
 
     await db.read();
 
-    const normalizedOld = oldEmail.trim().toLowerCase();
+    const normalizedOld = (oldEmail || "").trim().toLowerCase();
     const normalizedNew = newEmail.trim().toLowerCase();
-
-    console.log("Old email (from client):", normalizedOld);
-    console.log("All emails in DB:", db.data.users.map(u => u.email.trim().toLowerCase()));
+    const normalizedMobile = (mobile || "").trim();
 
     const user = db.data.users.find(u =>
-        u.email?.trim().toLowerCase() === normalizedOld
+        (normalizedOld && u.email?.trim().toLowerCase() === normalizedOld) ||
+        (normalizedMobile && u.mobile?.trim() === normalizedMobile)
     );
 
     if (!user) {
@@ -316,7 +353,7 @@ app.post("/update-email", async (req, res) => {
 
     // Prevent duplicate email
     const exists = db.data.users.find(u =>
-        u.email?.trim().toLowerCase() === normalizedNew
+        u !== user && u.email?.trim().toLowerCase() === normalizedNew
     );
     if (exists) {
         return res.status(409).send("New email already exists");
@@ -329,36 +366,36 @@ app.post("/update-email", async (req, res) => {
 });
 
 app.post("/update-mobile", async (req, res) => {
-    const { email, newMobile } = req.body;
+    const { email, newMobile, oldMobile } = req.body;
 
-    if (!email || !newMobile) {
-        return res.status(400).send("Email and new mobile are required");
+    if (!newMobile) {
+        return res.status(400).send("New mobile is required");
     }
 
     await db.read();
+    const normalizedEmail = (email || "").trim().toLowerCase();
+    const normalizedOldMobile = (oldMobile || "").trim();
 
-    const user = db.data.users.find(
-        u => u.email?.trim().toLowerCase() === email.trim().toLowerCase()
+    const user = db.data.users.find(u =>
+        (normalizedEmail && u.email?.trim().toLowerCase() === normalizedEmail) ||
+        (normalizedOldMobile && u.mobile?.trim() === normalizedOldMobile)
     );
 
     if (!user) {
         return res.status(404).send("User not found");
     }
 
-    // Check if number already exists
-    const mobileExists = db.data.users.find(
-        u => u.mobile === newMobile && u.email !== email
-    );
-
-    if (mobileExists) {
-        return res.status(409).send("New number is already in use");
+    user.mobile = newMobile.trim();
+    user.activeNumber = newMobile.trim();
+    user.phoneNumbers ||= [];
+    if (!user.phoneNumbers.some(p => p.number === user.mobile)) {
+        user.phoneNumbers.unshift({ number: user.mobile });
     }
-
-    user.mobile = newMobile;
     await db.write();
 
-    res.status(200).send("Mobile number updated successfully");
+    res.status(200).send("Mobile updated successfully");
 });
+
 
 // Endpoint to upload profile picture
 app.post('/upload-profile-pic', upload.single('profilePic'), async (req, res) => {
@@ -495,8 +532,9 @@ app.post("/orders/place", async (req, res) => {
         id: "ORD" + uuidv4().replace(/-/g, "").slice(0, 10).toUpperCase(),
         items: cart,
         total,
+        paymentMethod: req.body.paymentMethod || "Cash on Delivery",
         status: "Processing",
-        placedAt: new Date().toISOString()
+        placedAt: req.body.placedAt || new Date().toISOString()
     };
 
     user.orders ||= [];
@@ -550,7 +588,261 @@ app.get("/orders/status", async (req, res) => {
     res.status(200).json({ status: order.status });
 });
 
+// Route to cancel active order for a user
+app.post("/orders/cancel", async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email required" });
 
+    await db.read();
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = db.data.users.find(u =>
+        u.email?.trim().toLowerCase() === normalizedEmail ||
+        u.mobile?.trim() === normalizedEmail
+    );
+
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    if (Array.isArray(user.orders) && user.orders.length > 0) {
+        user.orders.forEach(order => {
+            if (order.status === "Processing" || order.status === "Pending") {
+                order.status = "Cancelled";
+                order.cancelledAt = new Date().toISOString();
+            }
+        });
+        await db.write();
+    }
+
+    res.status(200).json({ success: true, message: "Order cancelled successfully" });
+});
+
+// Route to mark active order as delivered for a user
+app.post("/orders/deliver", async (req, res) => {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success: false, message: "Email required" });
+
+    await db.read();
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = db.data.users.find(u =>
+        u.email?.trim().toLowerCase() === normalizedEmail ||
+        u.mobile?.trim() === normalizedEmail
+    );
+
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+    if (Array.isArray(user.orders) && user.orders.length > 0) {
+        user.orders.forEach(order => {
+            if (order.status === "Processing" || order.status === "Pending") {
+                order.status = "Delivered";
+                order.deliveredAt = new Date().toISOString();
+            }
+        });
+        await db.write();
+    }
+
+    res.status(200).json({ success: true, message: "Order marked as delivered successfully" });
+});
+
+// Endpoint to fetch full profile and isolated data for the active user
+app.get("/user/profile", async (req, res) => {
+    const { email, mobile } = req.query;
+    if (!email && !mobile) {
+        return res.status(400).json({ success: false, message: "Email or mobile required" });
+    }
+
+    await db.read();
+    const normalizedEmail = email ? email.trim().toLowerCase() : "";
+    const user = db.data.users.find(u =>
+        (normalizedEmail && u.email?.trim().toLowerCase() === normalizedEmail) ||
+        (mobile && u.mobile?.trim() === mobile.trim())
+    );
+
+    if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const displayName = user.nickName || [user.firstName, user.lastName].filter(Boolean).join(" ") || user.firstName || "User";
+    res.status(200).json({
+        success: true,
+        user: {
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            nickName: displayName,
+            email: user.email || "",
+            mobile: user.mobile || "",
+            profilePic: user.profilePic || "",
+            addresses: user.addresses || [],
+            phoneNumbers: user.phoneNumbers || (user.mobile ? [{ number: user.mobile }] : []),
+            activeAddress: user.activeAddress || (user.addresses && user.addresses[0] ? user.addresses[0].houseNo : ""),
+            activeNumber: user.activeNumber || user.mobile || "",
+            cookiePay: user.cookiePay || 0,
+            premium: user.premium || false,
+            orders: user.orders || []
+        }
+    });
+});
+
+// Endpoint to save addresses for a specific user
+app.post("/user/addresses/save", async (req, res) => {
+    const { email, addresses, activeAddress } = req.body;
+    if (!email || !Array.isArray(addresses)) {
+        return res.status(400).json({ success: false, message: "Email and addresses array required" });
+    }
+
+    await db.read();
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = db.data.users.find(u => u.email?.trim().toLowerCase() === normalizedEmail || u.mobile?.trim() === normalizedEmail);
+    if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    user.addresses = addresses;
+    if (activeAddress !== undefined) {
+        user.activeAddress = activeAddress;
+    }
+    await db.write();
+
+    res.status(200).json({ success: true, message: "Addresses saved", addresses: user.addresses, activeAddress: user.activeAddress });
+});
+
+// Endpoint to save phone numbers for a specific user
+app.post("/user/phones/save", async (req, res) => {
+    const { email, phoneNumbers, activeNumber } = req.body;
+    if (!email || !Array.isArray(phoneNumbers)) {
+        return res.status(400).json({ success: false, message: "Email and phone numbers array required" });
+    }
+
+    await db.read();
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = db.data.users.find(u => u.email?.trim().toLowerCase() === normalizedEmail || u.mobile?.trim() === normalizedEmail);
+    if (!user) {
+        return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    user.phoneNumbers = phoneNumbers;
+    if (activeNumber !== undefined) {
+        user.activeNumber = activeNumber;
+    }
+    await db.write();
+
+    res.status(200).json({ success: true, message: "Phone numbers saved", phoneNumbers: user.phoneNumbers, activeNumber: user.activeNumber });
+});
+
+// Endpoint for reverse geocoding (coordinates to structured address)
+app.get("/api/reverse-geocode", async (req, res) => {
+    const { lat, lon } = req.query;
+    if (!lat || !lon) {
+        return res.status(400).json({ success: false, message: "Latitude and longitude required" });
+    }
+
+    // 1. Try OpenStreetMap Nominatim with proper headers
+    try {
+        const osmUrl = `https://nominatim.openstreetmap.org/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&format=json&addressdetails=1`;
+        const osmRes = await fetch(osmUrl, {
+            headers: {
+                "User-Agent": "FoodDeliveryApp/1.0 (support@fooddelivery.local)",
+                "Accept-Language": "en"
+            }
+        });
+
+        if (osmRes.ok) {
+            const data = await osmRes.json();
+            const addr = data.address || {};
+            const city = addr.city || addr.town || addr.village || addr.city_district || addr.suburb || addr.county || "";
+            const state = addr.state || addr.province || addr.state_district || "";
+            const pincode = addr.postcode || "";
+            const houseNo = addr.house_number || addr.building || "";
+            const roadName = [addr.house_number, addr.road, addr.neighbourhood, addr.suburb].filter(Boolean).join(", ") || addr.road || addr.suburb || addr.display_name || "";
+
+            return res.json({
+                success: true,
+                address: {
+                    city,
+                    state,
+                    pincode,
+                    roadName,
+                    houseNo,
+                    displayName: data.display_name || ""
+                }
+            });
+        }
+    } catch (err) {
+        console.warn("Nominatim geocode skipped:", err.message);
+    }
+
+    // 2. Fallback to BigDataCloud
+    try {
+        const bdcUrl = `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${encodeURIComponent(lat)}&longitude=${encodeURIComponent(lon)}&localityLanguage=en`;
+        const bdcRes = await fetch(bdcUrl);
+        if (bdcRes.ok) {
+            const bdcData = await bdcRes.json();
+            return res.json({
+                success: true,
+                address: {
+                    city: bdcData.city || bdcData.locality || "",
+                    state: bdcData.principalSubdivision || "",
+                    pincode: bdcData.postcode || "",
+                    roadName: [bdcData.locality, bdcData.city].filter(Boolean).join(", "),
+                    houseNo: "",
+                    displayName: bdcData.localityInfo?.informative?.[0]?.name || ""
+                }
+            });
+        }
+    } catch (err) {
+        console.warn("BigDataCloud geocode skipped:", err.message);
+    }
+
+    res.status(500).json({ success: false, message: "Reverse geocoding failed" });
+});
+
+// Endpoint for IP-based location detection (fallback when GPS is denied/unavailable)
+app.get("/api/detect-ip-location", async (req, res) => {
+    try {
+        const ipRes = await fetch("https://ipwho.is/");
+        if (ipRes.ok) {
+            const data = await ipRes.json();
+            if (data.success !== false) {
+                return res.json({
+                    success: true,
+                    location: {
+                        city: data.city || "",
+                        state: data.region || "",
+                        pincode: data.postal || "",
+                        latitude: data.latitude,
+                        longitude: data.longitude,
+                        roadName: data.city ? `${data.city} Area` : "",
+                        houseNo: ""
+                    }
+                });
+            }
+        }
+    } catch (err) {
+        console.warn("ipwho.is skipped:", err.message);
+    }
+
+    // Secondary IP fallback
+    try {
+        const ipRes2 = await fetch("https://ipapi.co/json/");
+        if (ipRes2.ok) {
+            const data2 = await ipRes2.json();
+            return res.json({
+                success: true,
+                location: {
+                    city: data2.city || "",
+                    state: data2.region || "",
+                    pincode: data2.postal || "",
+                    latitude: data2.latitude,
+                    longitude: data2.longitude,
+                    roadName: data2.city ? `${data2.city} Area` : "",
+                    houseNo: ""
+                }
+            });
+        }
+    } catch (err) {
+        console.warn("ipapi.co skipped:", err.message);
+    }
+
+    res.status(500).json({ success: false, message: "IP location detection failed" });
+});
 
 // Serve static files from the correct folder
 app.use(express.static(path.join(__dirname, "frontend", "public")));

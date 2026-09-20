@@ -133,15 +133,22 @@
 
     <script>
    document.addEventListener("DOMContentLoaded", function () {
-    setTimeout(function () {
-        const loadingScreen = document.getElementById("loading-screen");
-        loadingScreen.classList.remove("hidden"); // Show loading screen
+       let redirected = false;
+       function goToNext() {
+           if (redirected) return;
+           redirected = true;
+           const email = sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail");
+           window.location.href = email ? "N-foodinterfacepage.html" : "N-foodloginpage.html";
+       }
 
-        setTimeout(function () {
-            window.location.href = "N-foodloginpage.html"; // Redirect after 5 seconds
-        }, 2000); // Loading screen stays for 5 seconds
-    }, 6000); // Delay increased to 6 seconds for cooking animation
-});
+       document.body.addEventListener("click", goToNext);
+
+       setTimeout(function () {
+           const loadingScreen = document.getElementById("loading-screen");
+           if (loadingScreen) loadingScreen.classList.remove("hidden");
+           setTimeout(goToNext, 1000);
+       }, 1500);
+   });
 
 
     </script>

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Confirmation</title>
+    <script src="user-session.js"></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
 
@@ -173,7 +174,17 @@
                 const scratchContent = document.getElementById("scratchContent");
                 const couponCode = document.getElementById("couponCode");
     
-                const selectedCoupon = localStorage.getItem("selectedCoupon");
+                let selectedCoupon = localStorage.getItem("selectedCoupon");
+                if (!selectedCoupon) {
+                    const fallbackCoupons = [
+                        "static/zomato.png - ₹10 to ₹100 off on your next order on Zomato",
+                        "static/pexels-gije-2933604.jpg - Flat 25% off on your next order",
+                        "static/925992503s.jpg - Free delivery on your next meal",
+                        "static/pexels-martabranco-1395306.jpg - Flat ₹50 instant discount"
+                    ];
+                    selectedCoupon = fallbackCoupons[Math.floor(Math.random() * fallbackCoupons.length)];
+                    localStorage.setItem("selectedCoupon", selectedCoupon);
+                }
     
                 // List of 5 different random codes
                 const couponCodes = [
@@ -192,8 +203,17 @@
                     const randomCode = couponCodes[Math.floor(Math.random() * couponCodes.length)];
                     couponCode.textContent = randomCode;
     
-                    // Store coupon details in localStorage for later viewing
-                    const couponDetails = { imagePath: imagePath.trim(), text: text.trim(), code: randomCode };
+                    // Store coupon details with isDelivered: false (locked until delivery)
+                    const couponDetails = {
+                        imagePath: imagePath.trim(),
+                        text: text.trim(),
+                        code: randomCode,
+                        isDelivered: false
+                    };
+
+                    if (window.UserSession) {
+                        window.UserSession.setCoupon(couponDetails);
+                    }
                     localStorage.setItem("storedCoupon", JSON.stringify(couponDetails));
     
                     // Scratch card reveal
@@ -201,7 +221,7 @@
                         scratchCard.querySelector('.scratch-overlay').style.display = "none";
                         scratchContent.classList.add("scratch-reveal");
     
-                        // Add "Copy Code" button
+                        // Add "Copy Code" button and delivery unlock note
                         const copyButton = document.createElement("button");
                         copyButton.textContent = "Copy Code";
                         copyButton.style.marginTop = "10px";
@@ -211,11 +231,18 @@
                             });
                         };
                         scratchContent.appendChild(copyButton);
+
+                        const unlockNotice = document.createElement("p");
+                        unlockNotice.style.fontSize = "12px";
+                        unlockNotice.style.color = "#555";
+                        unlockNotice.style.marginTop = "8px";
+                        unlockNotice.textContent = "🔒 Note: This coupon will unlock in your Coupons page after order delivery.";
+                        scratchContent.appendChild(unlockNotice);
                     });
     
                 } else {
                     couponMessage.textContent = "No coupons available.";
-                    scratchCard.style.display = "none"; // Hide scratch card if no coupon
+                    scratchCard.style.display = "none";
                 }
             });
     

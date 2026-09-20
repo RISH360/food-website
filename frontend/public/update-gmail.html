@@ -285,9 +285,10 @@ input:focus {
             setTimeout(async () => {
                 if (enteredOTP === generatedOTP) {
                     let newEmail = document.getElementById("newEmail").value.trim().toLowerCase();
-                    let oldEmail = localStorage.getItem("profileEmail")?.trim().toLowerCase();
+                    let oldEmail = (sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail") || "").trim().toLowerCase();
         
-                    // ✅ Update localStorage
+                    // ✅ Update session and storage
+                    sessionStorage.setItem("profileEmail", newEmail);
                     localStorage.setItem("profileEmail", newEmail);
         
                     // ✅ Send request to backend to update email in db.json

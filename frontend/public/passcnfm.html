@@ -232,13 +232,15 @@
             const loadingScreen = document.getElementById("loading-screen");
             loadingScreen.classList.remove("hidden");
         
-            // Send password to backend
+            const email = sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail") || "";
+
+            // Send password and email to backend
             fetch("/confirm-password", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ password }),
+                body: JSON.stringify({ email, password }),
             }).then((res) => {
                 if (res.ok) {
                     setTimeout(() => {

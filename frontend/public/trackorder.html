@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Track Your Order</title>
+    <script src="user-session.js"></script>
     <script src="footer.js" defer></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
@@ -15,11 +16,148 @@
             display: none !important;
         }
 
-        #no-order-message {
+        .cancellation-banner {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
             text-align: center;
-            color: rgb(92, 92, 92);
-            font-weight: bold;
+            margin: 15px auto 20px auto;
+            max-width: 480px;
+            box-shadow: 0 4px 12px rgba(198, 40, 40, 0.12);
+        }
+
+        .dark-mode .cancellation-banner {
+            background: #3b1818;
+            color: #ff8a80;
+            border-color: #d32f2f;
+        }
+
+        .no-order-card {
             display: none;
+            text-align: center;
+            background: #ffffff;
+            padding: 35px 25px;
+            border-radius: 16px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.08);
+            margin: 20px auto;
+            max-width: 420px;
+        }
+
+        .dark-mode .no-order-card {
+            background: #1e1e1e;
+            color: #eee;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.4);
+        }
+
+        .no-order-icon {
+            width: 65px;
+            height: auto;
+            opacity: 0.7;
+            margin-bottom: 12px;
+        }
+
+        .no-order-card h3 {
+            margin: 8px 0;
+            font-size: 20px;
+            color: #2d3436;
+        }
+
+        .dark-mode .no-order-card h3 {
+            color: #ffffff;
+        }
+
+        .no-order-card p {
+            color: #636e72;
+            font-size: 14px;
+            margin-bottom: 22px;
+        }
+
+        .dark-mode .no-order-card p {
+            color: #b2bec3;
+        }
+
+        .explore-menu-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            color: white;
+            text-decoration: none;
+            padding: 11px 24px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 14px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .explore-menu-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+        }
+
+        .confirm-delivery-btn {
+            display: block;
+            margin: 12px auto 0 auto;
+            background: linear-gradient(135deg, #2ed573, #1abc9c);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(46, 213, 115, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .confirm-delivery-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(46, 213, 115, 0.45);
+        }
+
+        .delivery-success-box {
+            background: #e8f8f5;
+            border: 1px solid #a3e4d7;
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        .dark-mode .delivery-success-box {
+            background: #13382c;
+            border-color: #1e824c;
+            color: #ecf0f1;
+        }
+
+        .delivery-success-title {
+            font-weight: bold;
+            font-size: 16px;
+            color: #16a085;
+            margin-bottom: 4px;
+        }
+
+        .dark-mode .delivery-success-title {
+            color: #2ecc71;
+        }
+
+        .unlocked-coupon-link {
+            display: inline-block;
+            margin-top: 8px;
+            background: #ff4757;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .unlocked-coupon-link:hover {
+            transform: scale(1.04);
         }
 
 
@@ -735,7 +873,15 @@
 <div class="combined-container">
     <div class="section-header">Delivery Status</div>
     <span id="status">Your order is on the way 🚀</span>
-    <h3>Arriving in: <span id="timer-display">15:00</span></h3>
+    <h3 id="timer-heading">Arriving in: <span id="timer-display">15:00</span></h3>
+    <button id="confirm-delivery-btn" class="confirm-delivery-btn" onclick="confirmDelivery()">
+        ✅ Confirm Delivery / Order Received
+    </button>
+    <div id="delivery-success-box" class="delivery-success-box hidden">
+        <div class="delivery-success-title">🎉 Order Delivered!</div>
+        <p style="margin: 4px 0 8px 0; font-size: 13px;">Your food has been delivered and your reward coupon is unlocked!</p>
+        <a href="couponscode.html" class="unlocked-coupon-link">🎟️ View My Unlocked Coupon</a>
+    </div>
 </div>
 
 
@@ -789,9 +935,16 @@
     Help us to reduce food waste by avoiding cancellations. The amount paid is non-refundable after placing the order.
 </p>
 
-<p id="no-order-message">
-    You have not ordered anything yet!
-</p>
+<div id="cancellation-banner" class="cancellation-banner hidden">
+    ❌ Your order has been cancelled successfully.
+</div>
+
+<div id="no-order-message" class="no-order-card">
+    <img src="static/pngwing.com (18).png" alt="No Order" class="no-order-icon">
+    <h3>No Active Orders</h3>
+    <p>You have not ordered anything yet or your order was cancelled.</p>
+    <a href="N-foodinterfacepage.html" class="explore-menu-btn">Explore Menu & Order</a>
+</div>
 
 
     <script>
@@ -821,34 +974,58 @@ document.addEventListener("DOMContentLoaded", () => {
     // ✅ Check if order was canceled
     let canceledMessage = localStorage.getItem("orderCanceled");
     if (canceledMessage) {
-        document.body.innerHTML = `<h2 style="text-align:center;">${canceledMessage}</h2>`;
         localStorage.removeItem("orderCanceled");
-        return;
+        const banner = document.getElementById("cancellation-banner");
+        if (banner) {
+            banner.textContent = (typeof canceledMessage === "string" && canceledMessage !== "true")
+                ? canceledMessage
+                : "❌ Your order has been cancelled successfully.";
+            banner.classList.remove("hidden");
+        }
     }
 
     // ✅ Load Address
-    let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-    let activeAddress = savedAddresses.find(addr => addr.houseNo === localStorage.getItem("activeAddress"));
+    let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
+    let activeAddressKey = window.UserSession ? window.UserSession.getActiveAddress() : null;
+    let activeAddress = savedAddresses.find(addr => addr.houseNo === activeAddressKey) || (savedAddresses.length > 0 ? savedAddresses[0] : null);
 
     deliveryAddress.textContent = activeAddress
         ? `${activeAddress.houseNo}, ${activeAddress.roadName}, ${activeAddress.city}, ${activeAddress.state} - ${activeAddress.pincode}`
         : "Not set";
 
     // ✅ Load Phone Number
-    let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-    let activeNumber = localStorage.getItem("activeNumber"); // Use correct key
+    let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
+    let activeNumber = window.UserSession ? window.UserSession.getActivePhone() : null;
 
-    let phoneEntry = savedNumbers.find(num => num.number === activeNumber);
+    let phoneEntry = savedNumbers.find(num => num.number === activeNumber) || (savedNumbers.length > 0 ? savedNumbers[0] : null);
     phoneNumber.textContent = phoneEntry ? phoneEntry.number : "Not set";
 
     // ✅ Load Payment Method
-    paymentMethod.textContent = localStorage.getItem("selectedPaymentMethod") || "Not set";
+    let resolvedPayment = (window.UserSession && window.UserSession.getScoped("selectedPaymentMethod"))
+        || localStorage.getItem("selectedPaymentMethod")
+        || (orderedProducts[0] && orderedProducts[0].paymentMethod)
+        || "Cash on Delivery";
+    paymentMethod.textContent = resolvedPayment;
+
+    window.addEventListener("userSessionUpdated", () => {
+        let updatedPayment = (window.UserSession && window.UserSession.getScoped("selectedPaymentMethod"))
+            || localStorage.getItem("selectedPaymentMethod")
+            || (orderedProducts[0] && orderedProducts[0].paymentMethod)
+            || "Cash on Delivery";
+        if (paymentMethod && (!paymentMethod.textContent || paymentMethod.textContent === "Loading...")) {
+            paymentMethod.textContent = updatedPayment;
+        }
+    });
 
     // ✅ Generate and Store OTP
-    let storedOTP = localStorage.getItem("deliveryOTP");
+    let storedOTP = window.UserSession ? window.UserSession.getScoped("deliveryOTP", null) : null;
     if (!storedOTP) {
         storedOTP = Math.floor(100000 + Math.random() * 900000);
-        localStorage.setItem("deliveryOTP", storedOTP);
+        if (window.UserSession) {
+            window.UserSession.setScoped("deliveryOTP", storedOTP);
+        } else {
+            localStorage.setItem("deliveryOTP", storedOTP);
+        }
     }
     otpCode.textContent = storedOTP;
 
@@ -862,7 +1039,7 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // ✅ Load Ordered Products
-    let orderedProducts = JSON.parse(localStorage.getItem("orderedProducts") || "[]");
+    let orderedProducts = window.UserSession ? window.UserSession.getOrders() : (JSON.parse(localStorage.getItem("orderedProducts")) || []);
 
     if (Array.isArray(orderedProducts) && orderedProducts.length > 0) {
         orderedContainer.innerHTML = orderedProducts.map(product => `
@@ -886,43 +1063,134 @@ document.addEventListener("DOMContentLoaded", () => {
         noOrderMessage.style.display = "none";
 
     } else {
+        // Clear ordered items HTML completely
+        if (orderedContainer) orderedContainer.innerHTML = "";
+
         // Show "No Order" message only when no products are available
-        noOrderMessage.style.display = "block";
+        if (noOrderMessage) noOrderMessage.style.display = "block";
         
         // Hide all containers if no products are available
         [mapContainer, deliveryInfoContainer, paymentMethodContainer, 
          otpContainer, orderDetailsContainer, deliveryStatusContainer, 
          deliveryBoyContainer, cancellationPolicy, timerDisplay].forEach(container => {
-            container.classList.add("hidden");
+            if (container) container.classList.add("hidden");
         });
+
+        localStorage.removeItem("deliveryBoy");
+        localStorage.removeItem("selectedDeliveryBoy");
+        localStorage.removeItem("orderTimer");
     }
 
-    // ✅ Timer Handling
-    let timeLeft = parseInt(localStorage.getItem("orderTimer")) || 900; // 15 minutes default
+    // ✅ Check if order was already marked delivered
+    const isAlreadyDelivered = window.UserSession
+        ? window.UserSession.isOrderDelivered()
+        : (localStorage.getItem("orderDeliveryStatus") === "Delivered");
 
-    function updateTimerDisplay() {
-        const minutes = Math.floor(timeLeft / 60);
-        const seconds = timeLeft % 60;
-        timerDisplay.textContent = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
-    }
+    window.confirmDelivery = function () {
+        if (window.UserSession) {
+            window.UserSession.markOrderDelivered();
+        } else {
+            let coupon = null;
+            try {
+                coupon = JSON.parse(localStorage.getItem("storedCoupon"));
+            } catch (e) {
+                coupon = null;
+            }
+            if (coupon) {
+                coupon.isDelivered = true;
+                localStorage.setItem("storedCoupon", JSON.stringify(coupon));
+            } else {
+                localStorage.setItem("storedCoupon", JSON.stringify({
+                    imagePath: "static/zomato.png",
+                    text: "Flat 20% off on your next order",
+                    code: "HOTDEAL100",
+                    isDelivered: true
+                }));
+            }
+            localStorage.setItem("orderDeliveryStatus", "Delivered");
+            localStorage.removeItem("orderTimer");
+        }
 
-    function startTimer() {
-        updateTimerDisplay();
-        const timerInterval = setInterval(() => {
+        const statusElement = document.getElementById("status");
+        if (statusElement) statusElement.textContent = "Order Delivered Successfully! Enjoy your meal 😋";
+
+        const timerHeading = document.getElementById("timer-heading");
+        if (timerHeading) timerHeading.style.display = "none";
+
+        const confirmBtn = document.getElementById("confirm-delivery-btn");
+        if (confirmBtn) confirmBtn.style.display = "none";
+
+        const successBox = document.getElementById("delivery-success-box");
+        if (successBox) successBox.classList.remove("hidden");
+
+        const cancelBtn = document.querySelector(".cancel-btn");
+        if (cancelBtn) cancelBtn.style.display = "none";
+    };
+
+    if (isAlreadyDelivered && orderedProducts.length > 0) {
+        window.confirmDelivery();
+    } else {
+        // ✅ Real-Time Delivery Countdown (15 minutes from order placedAt)
+        const TOTAL_DURATION_SECONDS = 900; // 15 minutes
+
+        // Retrieve order placed timestamp
+        let orderPlacedAt = (window.UserSession && window.UserSession.getScoped("orderPlacedAt"))
+            || localStorage.getItem("orderPlacedAt")
+            || (orderedProducts[0] && orderedProducts[0].placedAt)
+            || null;
+
+        // If not found but active order exists, initialize to now
+        if (!orderPlacedAt && orderedProducts.length > 0) {
+            orderPlacedAt = new Date().toISOString();
+            if (window.UserSession) {
+                window.UserSession.setScoped("orderPlacedAt", orderPlacedAt);
+            }
+            localStorage.setItem("orderPlacedAt", orderPlacedAt);
+        }
+
+        function calculateTimeRemaining() {
+            if (!orderPlacedAt) return 0;
+            const placedTimeMs = new Date(orderPlacedAt).getTime();
+            if (isNaN(placedTimeMs)) return 0;
+            const elapsedSeconds = Math.floor((Date.now() - placedTimeMs) / 1000);
+            return Math.max(0, TOTAL_DURATION_SECONDS - elapsedSeconds);
+        }
+
+        let timeLeft = calculateTimeRemaining();
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            if (timerDisplay) timerDisplay.textContent = `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+        }
+
+        function startTimer() {
+            timeLeft = calculateTimeRemaining();
+            updateTimerDisplay();
+
             if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                localStorage.removeItem("orderTimer");
-                timerDisplay.textContent = "Time Expired!";
+                window.confirmDelivery();
                 return;
             }
-            timeLeft--;
-            localStorage.setItem("orderTimer", timeLeft);
-            updateTimerDisplay();
-        }, 1000);
-    }
 
-    if (orderedProducts.length > 0 && timerDisplay) {
-        startTimer();
+            const timerInterval = setInterval(() => {
+                timeLeft = calculateTimeRemaining();
+                updateTimerDisplay();
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    window.confirmDelivery(); // Auto-complete delivery when timer completes
+                }
+            }, 1000);
+        }
+
+        if (orderedProducts.length > 0 && timerDisplay) {
+            if (timeLeft <= 0) {
+                window.confirmDelivery();
+            } else {
+                startTimer();
+            }
+        }
     }
 });
 
@@ -931,6 +1199,11 @@ document.addEventListener("DOMContentLoaded", () => {
     <script>
         document.addEventListener("DOMContentLoaded", () => {
     console.log("🚀 Track Order Page Loaded...");
+
+    const activeOrders = window.UserSession ? window.UserSession.getOrders() : (JSON.parse(localStorage.getItem("orderedProducts")) || []);
+    if (!activeOrders || activeOrders.length === 0) {
+        return; // Don't setup delivery boy if no active order
+    }
 
     const deliveryBoyNameElement = document.querySelector(".delivery-boy-name");
     const deliveryBoyImageElement = document.querySelector(".delivery-boy-info img");

@@ -40,16 +40,25 @@ function cancelOrder() {
     });
 
     // Confirm cancellation
-    document.getElementById("confirmCancel").addEventListener("click", function() {
+    document.getElementById("confirmCancel").addEventListener("click", async function() {
         document.body.removeChild(cancelPopup);
         
-        // Save order cancellation message to localStorage
-        localStorage.setItem("orderCanceled", "Your order has been canceled. You have not ordered anything.");
-
-        // Clear cart and other details
-        localStorage.removeItem("cartProducts");
-        localStorage.removeItem("activeAddress");
-        localStorage.removeItem("activePhone");
+        if (window.UserSession && typeof window.UserSession.cancelActiveOrder === "function") {
+            await window.UserSession.cancelActiveOrder();
+        } else {
+            if (window.UserSession) {
+                window.UserSession.saveOrders([]);
+            }
+            localStorage.removeItem("orderedProducts");
+            localStorage.removeItem("trackOrder");
+            localStorage.removeItem("deliveryOTP");
+            localStorage.removeItem("orderTimer");
+            localStorage.removeItem("selectedPaymentMethod");
+            localStorage.removeItem("deliveryBoy");
+            localStorage.removeItem("selectedDeliveryBoy");
+            localStorage.removeItem("orderPlacedAt");
+            localStorage.setItem("orderCanceled", "Your order has been cancelled successfully.");
+        }
 
         // Redirect to Track Order page
         window.location.href = "trackorder.html";

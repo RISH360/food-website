@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile Settings</title>
+    <script src="user-session.js"></script>
 
     <style>
      body {
@@ -424,13 +425,16 @@
         }
 
         
-    // ✅ Store premium access
+    // ✅ Store premium access scoped to user
+    if (window.UserSession) {
+        window.UserSession.setScoped("hasPremium", "true");
+        window.UserSession.setScoped("premiumStartDate", new Date().toISOString());
+    }
     localStorage.setItem("hasPremium", "true");
     localStorage.setItem("premiumStartDate", new Date().toISOString());
     
-        alert("✅ Order placed successfully!");
-        localStorage.setItem("hasPremium", "true"); // <-- unlock premium
-        window.location.href = "premiumview.html";
+    alert("✅ Order placed successfully!");
+    window.location.href = "premiumview.html";
     }
     
     function openPaymentOptions() {

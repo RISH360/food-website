@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login Page</title>
     <link rel="stylesheet" href="N-foodloginpage.css">
+    <script src="user-session.js"></script>
     <script defer src="N-foodloginpage.js"></script> <!-- Link to JavaScript -->
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="appearance.js" defer></script>
@@ -250,7 +251,7 @@ function confirmOTP() {
         if (enteredOTP === storedOTP) {
             alert("OTP Verified Successfully!");
 
-            // Send the phone number to the backend for registration
+            // Send the phone number to the backend
             fetch('/register-mobile', {
                 method: 'POST',
                 headers: {
@@ -261,10 +262,22 @@ function confirmOTP() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    localStorage.setItem("registeredMobile", phoneNumber); // ✅ Store here
-                    window.location.href = "mobilenamesign.html"; // Redirect after success
+                    if (data.isExistingUser && data.user) {
+                        if (window.UserSession) {
+                            window.UserSession.setUser(data.user);
+                        } else {
+                            sessionStorage.setItem("profileName", data.user.nickName || data.user.firstName);
+                            sessionStorage.setItem("profileEmail", data.user.email || "");
+                            sessionStorage.setItem("profilePhone", data.user.mobile);
+                        }
+                        alert("Welcome back!");
+                        window.location.href = "N-foodinterfacepage.html";
+                    } else {
+                        localStorage.setItem("registeredMobile", phoneNumber);
+                        window.location.href = "mobilenamesign.html";
+                    }
                 } else {
-                    alert(data.message); // Show error message from backend
+                    alert(data.message || "Failed to process mobile login");
                 }
             })
             .catch(error => {
@@ -276,7 +289,7 @@ function confirmOTP() {
         }
 
         loadingScreen.classList.add("hidden");
-    }, 5000); // 5 seconds delay for loading screen effect
+    }, 1500); // 1.5s delay for realistic processing
 }
 
 // Function to resend OTP

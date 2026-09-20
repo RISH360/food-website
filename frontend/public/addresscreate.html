@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Create Address</title>
+    <script src="user-session.js"></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
 
@@ -154,11 +155,67 @@ input[type="radio"]:checked::before {
 
 /* Special styling for "Use My Location" button */
 #useLocationBtn {
-    background-color: #4CAF50; /* Green color */
+    background-color: #2e7d32;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 14px;
+    transition: all 0.2s ease;
 }
 
 #useLocationBtn:hover {
-    background-color: #45a049; /* Darker green on hover */
+    background-color: #1b5e20;
+    transform: scale(1.01);
+}
+
+#useLocationBtn:disabled {
+    background-color: #81c784;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.location-status {
+    margin-top: 8px;
+    font-size: 13px;
+    text-align: center;
+    font-weight: 500;
+    display: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+}
+
+.location-status.success {
+    display: block;
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+}
+
+.location-status.loading {
+    display: block;
+    background: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
+.location-status.error {
+    display: block;
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.field-highlight {
+    animation: flashInput 1.6s ease-out;
+}
+
+@keyframes flashInput {
+    0% { background-color: #e8f5e9; border: 2px solid #4caf50; }
+    50% { background-color: #e8f5e9; border: 2px solid #4caf50; }
+    100% { background-color: #fff; border: 1px solid #ccc; }
 }
 
 
@@ -209,7 +266,8 @@ input[type="radio"]:checked::before {
                 <input type="radio" id="work" name="addressType" value="Work"> Work
             </div>
     
-            <button class="btn" id="useLocationBtn">Use My Location</button>
+            <button class="btn" id="useLocationBtn" type="button">📍 Use My Location</button>
+            <div id="locationStatus" class="location-status"></div>
             <button class="btn" id="saveAddressBtn">Save Address</button>
         </div>
     
@@ -309,20 +367,193 @@ const cities = {
         input.parentElement.appendChild(dropdown);
     }
 
-    // Use My Location Functionality
-    useLocationBtn.addEventListener("click", function () {
+    // Location Detection and Auto-Fill Implementation
+    const pincodeInput = document.getElementById("pincodeInput");
+    const houseNoInput = document.getElementById("houseNoInput");
+    const roadNameInput = document.getElementById("roadNameInput");
+    const locationStatus = document.getElementById("locationStatus");
+
+    function setLocationStatus(type, msg) {
+        if (!locationStatus) return;
+        locationStatus.className = "location-status " + type;
+        locationStatus.textContent = msg;
+        locationStatus.style.display = "block";
+    }
+
+    function highlightField(el) {
+        if (!el) return;
+        el.classList.remove("field-highlight");
+        void el.offsetWidth; // trigger reflow
+        el.classList.add("field-highlight");
+    }
+
+    function applyDetectedAddress(data) {
+        if (!data) return;
+
+        if (data.pincode) {
+            pincodeInput.value = data.pincode;
+            highlightField(pincodeInput);
+        }
+        if (data.state) {
+            stateInput.value = data.state;
+            highlightField(stateInput);
+        }
+        if (data.city) {
+            cityInput.value = data.city;
+            highlightField(cityInput);
+        }
+        if (data.roadName) {
+            roadNameInput.value = data.roadName;
+            highlightField(roadNameInput);
+        }
+        if (data.houseNo) {
+            houseNoInput.value = data.houseNo;
+            highlightField(houseNoInput);
+        }
+
+        // Default address type to Home if not already checked
+        const checkedType = document.querySelector('input[name="addressType"]:checked');
+        if (!checkedType) {
+            const homeRadio = document.getElementById("home");
+            if (homeRadio) homeRadio.checked = true;
+        }
+
+        // Focus on house number if not populated so user can easily enter door number
+        if (!houseNoInput.value) {
+            houseNoInput.placeholder = "Enter House / Flat / Door No.";
+            houseNoInput.focus();
+        }
+
+        const summary = [data.roadName, data.city, data.state, data.pincode].filter(Boolean).slice(0, 3).join(", ");
+        setLocationStatus("success", "✓ Location filled: " + (summary || "Address detected"));
+    }
+
+    async function detectViaCoordinates(lat, lon) {
+        try {
+            const res = await fetch(`/api/reverse-geocode?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`);
+            if (res.ok) {
+                const json = await res.json();
+                if (json.success && json.address) {
+                    return json.address;
+                }
+            }
+        } catch (e) {
+            console.warn("Backend reverse-geocode failed, falling back to direct service:", e);
+        }
+
+        // Direct fallback to BigDataCloud reverse geocode client API
+        try {
+            const bdcRes = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+            if (bdcRes.ok) {
+                const bdc = await bdcRes.json();
+                return {
+                    city: bdc.city || bdc.locality || "",
+                    state: bdc.principalSubdivision || "",
+                    pincode: bdc.postcode || "",
+                    roadName: [bdc.locality, bdc.city].filter(Boolean).join(", "),
+                    houseNo: ""
+                };
+            }
+        } catch (e) {
+            console.warn("BigDataCloud fallback failed:", e);
+        }
+
+        return null;
+    }
+
+    async function detectViaNetworkIp() {
+        try {
+            const res = await fetch("/api/detect-ip-location");
+            if (res.ok) {
+                const json = await res.json();
+                if (json.success && json.location) {
+                    const loc = json.location;
+                    if (loc.latitude && loc.longitude) {
+                        const moreDetailed = await detectViaCoordinates(loc.latitude, loc.longitude);
+                        if (moreDetailed) {
+                            return {
+                                city: moreDetailed.city || loc.city,
+                                state: moreDetailed.state || loc.state,
+                                pincode: moreDetailed.pincode || loc.pincode,
+                                roadName: moreDetailed.roadName || loc.roadName,
+                                houseNo: moreDetailed.houseNo || ""
+                            };
+                        }
+                    }
+                    return loc;
+                }
+            }
+        } catch (e) {
+            console.warn("Backend IP detection failed, trying direct network API:", e);
+        }
+
+        // Direct fallback to ipwho.is
+        try {
+            const ipRes = await fetch("https://ipwho.is/");
+            if (ipRes.ok) {
+                const ipData = await ipRes.json();
+                if (ipData.success !== false) {
+                    return {
+                        city: ipData.city || "",
+                        state: ipData.region || "",
+                        pincode: ipData.postal || "",
+                        roadName: ipData.city ? ipData.city + " Area" : "",
+                        houseNo: ""
+                    };
+                }
+            }
+        } catch (e) {
+            console.warn("Direct IP detection failed:", e);
+        }
+
+        return null;
+    }
+
+    useLocationBtn.addEventListener("click", async function () {
+        useLocationBtn.disabled = true;
+        const originalHtml = useLocationBtn.innerHTML;
+        useLocationBtn.innerHTML = "<span>⏳ Detecting location...</span>";
+        setLocationStatus("loading", "Detecting your location, please wait...");
+
+        let addressResult = null;
+
+        // 1. Try GPS Geolocation first
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function (position) {
-                fetch(`https://nominatim.openstreetmap.org/reverse?lat=${position.coords.latitude}&lon=${position.coords.longitude}&format=json`)
-                    .then(response => response.json())
-                    .then(data => {
-                        stateInput.value = data.address.state || "";
-                        cityInput.value = data.address.city || "";
-                    })
-                    .catch(err => alert("Location fetch failed."));
-            });
+            try {
+                const position = await new Promise((resolve, reject) => {
+                    navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 7000,
+                        maximumAge: 60000
+                    });
+                });
+
+                if (position && position.coords) {
+                    setLocationStatus("loading", "Coordinates found! Resolving address details...");
+                    addressResult = await detectViaCoordinates(position.coords.latitude, position.coords.longitude);
+                }
+            } catch (geoErr) {
+                console.warn("Browser GPS unavailable or denied (" + geoErr.message + "). Falling back to network IP location...");
+                setLocationStatus("loading", "GPS not available. Detecting location via network...");
+            }
+        }
+
+        // 2. Fallback to IP Network Location if GPS was denied or unavailable
+        if (!addressResult) {
+            addressResult = await detectViaNetworkIp();
+        }
+
+        if (addressResult && (addressResult.city || addressResult.state || addressResult.pincode)) {
+            applyDetectedAddress(addressResult);
+            useLocationBtn.innerHTML = "<span>✓ Location Filled</span>";
+            setTimeout(() => {
+                useLocationBtn.innerHTML = "<span>📍 Use My Location</span>";
+                useLocationBtn.disabled = false;
+            }, 3000);
         } else {
-            alert("Geolocation is not supported by your browser.");
+            setLocationStatus("error", "Could not automatically detect location. Please fill the fields manually.");
+            useLocationBtn.innerHTML = originalHtml;
+            useLocationBtn.disabled = false;
         }
     });
 
@@ -344,15 +575,18 @@ const cities = {
             }
         }
 
-        let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
+        let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
         if (savedAddresses.length >= 2) {
             alert("You can only save up to 2 addresses.");
             return;
         }
         savedAddresses.push(addressData);
-        localStorage.setItem("addresses", JSON.stringify(savedAddresses));
+        if (window.UserSession) {
+            window.UserSession.saveAddresses(savedAddresses);
+        } else {
+            localStorage.setItem("addresses", JSON.stringify(savedAddresses));
+        }
 
-        alert("Address saved successfully!");
         window.location.href = "profile.html"; // Redirect back to main page
     });
 });

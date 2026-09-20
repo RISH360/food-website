@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Confirm Cancellation</title>
+    <script src="user-session.js"></script>
     <script src="footer.js" defer></script>
     <script src="appearance.js" defer></script>
     <link rel="stylesheet" href="appearance.css">
@@ -247,45 +248,48 @@
     }
 });
 
-function cancelOrder() {
-
+async function cancelOrder() {
     // 🟡 Roll back cashback if it was added
-const cashbackWasAdded = localStorage.getItem("cashbackAdded") === "true";
-const hasPremium = localStorage.getItem("hasPremium") === "true";
-const itemTotal = parseFloat(localStorage.getItem("itemTotal")) || 0;
-const cookieAccountCreated = localStorage.getItem("cookieAccountCreated") === "true";
+    const cashbackWasAdded = localStorage.getItem("cashbackAdded") === "true";
+    const hasPremium = localStorage.getItem("hasPremium") === "true";
+    const itemTotal = parseFloat(localStorage.getItem("itemTotal")) || 0;
+    const cookieAccountCreated = localStorage.getItem("cookieAccountCreated") === "true";
 
-if (cashbackWasAdded && hasPremium && itemTotal > 0 && cookieAccountCreated) {
-    const cashback = parseFloat((itemTotal * 0.10).toFixed(2));
-    let cookieMoney = parseFloat(localStorage.getItem("cookieMoney")) || 0;
+    if (cashbackWasAdded && hasPremium && itemTotal > 0 && cookieAccountCreated) {
+        const cashback = parseFloat((itemTotal * 0.10).toFixed(2));
+        let cookieMoney = parseFloat(localStorage.getItem("cookieMoney")) || 0;
 
-    cookieMoney = Math.max(0, cookieMoney - cashback); // Ensure no negative balance
-    localStorage.setItem("cookieMoney", cookieMoney.toFixed(2));
-    localStorage.removeItem("cashbackAdded"); // Reset cashback status
-}
+        cookieMoney = Math.max(0, cookieMoney - cashback); // Ensure no negative balance
+        localStorage.setItem("cookieMoney", cookieMoney.toFixed(2));
+        localStorage.removeItem("cashbackAdded"); // Reset cashback status
+    }
 
-    let confirmCancel = confirm("Are you sure you want to cancel the order?");
-    if (confirmCancel) {
-        const loadingScreen = document.getElementById("loading-screen");
+    const loadingScreen = document.getElementById("loading-screen");
+    if (loadingScreen) {
         loadingScreen.classList.remove("hidden"); // Show loading screen
+    }
 
-        // ✅ Keep address and phone number after cancellation
-        localStorage.setItem("orderCanceled", "Your order has been canceled.");
+    if (window.UserSession && typeof window.UserSession.cancelActiveOrder === "function") {
+        await window.UserSession.cancelActiveOrder();
+    } else {
+        if (window.UserSession) {
+            window.UserSession.saveOrders([]);
+        }
         localStorage.removeItem("orderedProducts");
+        localStorage.removeItem("trackOrder");
         localStorage.removeItem("selectedPaymentMethod");
         localStorage.removeItem("deliveryOTP");
         localStorage.removeItem("orderTimer");
-
-        // ❌ Do NOT remove activeAddress and activePhone anymore
-        // localStorage.removeItem("activeAddress"); 🚨 Removed
-        // localStorage.removeItem("activePhone"); 🚨 Removed
-
-        // Delay redirection for 9 seconds
-        setTimeout(() => {
-            alert("Your order has been canceled.");
-            window.location.href = "cart.html"; // Redirect after 9 seconds
-        }, 9000);
+        localStorage.removeItem("deliveryBoy");
+        localStorage.removeItem("selectedDeliveryBoy");
+        localStorage.removeItem("orderPlacedAt");
+        localStorage.setItem("orderCanceled", "Your order has been cancelled successfully.");
     }
+
+    // Smooth transition to track order page where the cleared state is shown
+    setTimeout(() => {
+        window.location.href = "trackorder.html";
+    }, 900);
 }
 
 

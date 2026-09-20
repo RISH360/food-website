@@ -72,13 +72,14 @@ window.onload = checkAssistStatus;
 
 
 function checkMissingInfo() {
-    let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-    let activeAddress = localStorage.getItem("activeAddress");
-    let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-    let activeNumber = localStorage.getItem("activeNumber");
-    let savedImage = localStorage.getItem("profileImage");
-    let savedLocations = JSON.parse(localStorage.getItem("savedAddresses")) || [];
-    let orderedProducts = JSON.parse(localStorage.getItem("orderedProducts") || "[]");
+    let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : (JSON.parse(localStorage.getItem("addresses")) || []);
+    let activeAddress = window.UserSession ? window.UserSession.getActiveAddress() : localStorage.getItem("activeAddress");
+    let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : (JSON.parse(localStorage.getItem("phoneNumbers")) || []);
+    let activeNumber = window.UserSession ? window.UserSession.getActivePhone() : localStorage.getItem("activeNumber");
+    let currentEmail = window.UserSession ? window.UserSession.getEmail() : "";
+    let savedImage = currentEmail ? localStorage.getItem(currentEmail + "_profileImage") : localStorage.getItem("profileImage");
+    let savedLocations = window.UserSession ? window.UserSession.getScoped("savedAddresses", []) : (JSON.parse(localStorage.getItem("savedAddresses")) || []);
+    let orderedProducts = window.UserSession ? window.UserSession.getOrders() : (JSON.parse(localStorage.getItem("orderedProducts") || "[]"));
 
     let hasAddress = activeAddress && savedAddresses.length > 0;
     let hasPhone = activeNumber && savedNumbers.length > 0;

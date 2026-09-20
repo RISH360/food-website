@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Food Details</title>
+    <script src="user-session.js"></script>
     <script src="footer.js" defer></script>
     <script src="appearance.js" defer></script>
     
@@ -677,8 +678,8 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         document.getElementById("add-to-cart").addEventListener("click", function () {
-    const userEmail = sessionStorage.getItem("profileEmail");
-    const cartKey = `cartProducts_${userEmail}`;
+    const userEmail = window.UserSession ? window.UserSession.getEmail() : (sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail"));
+    const cartKey = userEmail ? `cartProducts_${userEmail}` : `cartProducts_guest`;
     let cart = JSON.parse(localStorage.getItem(cartKey)) || [];
 
     const productIndex = cart.findIndex(p => p.name === name);
@@ -762,20 +763,20 @@ document.getElementById('save-icon').addEventListener('click', function () {
 
 <script>
     function loadActiveAddress() {
-        let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-        let activeAddress = localStorage.getItem("activeAddress");
+        let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
+        let activeAddress = window.UserSession ? window.UserSession.getActiveAddress() : null;
 
         let addressContainer = document.getElementById("activeAddressContainer");
         addressContainer.innerHTML = "";
 
-        if (!activeAddress) {
-            addressContainer.innerHTML = "<p>No active address found.</p>";
+        if (!activeAddress || savedAddresses.length === 0) {
+            addressContainer.innerHTML = "<p>No active address found. Please set in Profile.</p>";
             return;
         }
 
-        let address = savedAddresses.find(addr => addr.houseNo === activeAddress);
+        let address = savedAddresses.find(addr => addr.houseNo === activeAddress) || savedAddresses[0];
         if (!address) {
-            addressContainer.innerHTML = "<p>No active address found.</p>";
+            addressContainer.innerHTML = "<p>No active address found. Please set in Profile.</p>";
             return;
         }
 
@@ -787,20 +788,20 @@ document.getElementById('save-icon').addEventListener('click', function () {
     }
 
     function loadActivePhone() {
-        let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-        let activeNumber = localStorage.getItem("activeNumber");
+        let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
+        let activeNumber = window.UserSession ? window.UserSession.getActivePhone() : null;
 
         let phoneContainer = document.getElementById("activePhoneContainer");
         phoneContainer.innerHTML = "";
 
-        if (!activeNumber) {
-            phoneContainer.innerHTML = "<p>No active phone number found.</p>";
+        if (!activeNumber || savedNumbers.length === 0) {
+            phoneContainer.innerHTML = "<p>No active phone number found. Please set in Profile.</p>";
             return;
         }
 
-        let phoneEntry = savedNumbers.find(num => num.number === activeNumber);
+        let phoneEntry = savedNumbers.find(num => num.number === activeNumber) || savedNumbers[0];
         if (!phoneEntry) {
-            phoneContainer.innerHTML = "<p>No active phone number found.</p>";
+            phoneContainer.innerHTML = "<p>No active phone number found. Please set in Profile.</p>";
             return;
         }
 
@@ -863,13 +864,14 @@ document.getElementById('save-icon').addEventListener('click', function () {
     window.onload = checkAssistStatus;
     
     function checkMissingInfo() {
-        let savedAddresses = JSON.parse(localStorage.getItem("addresses")) || [];
-        let activeAddress = localStorage.getItem("activeAddress");
-        let savedNumbers = JSON.parse(localStorage.getItem("phoneNumbers")) || [];
-        let activeNumber = localStorage.getItem("activeNumber");
-        let savedImage = localStorage.getItem("profileImage");
-        let savedLocations = JSON.parse(localStorage.getItem("savedAddresses")) || [];
-        let orderedProducts = JSON.parse(localStorage.getItem("orderedProducts") || "[]");
+        let savedAddresses = window.UserSession ? window.UserSession.getAddresses() : [];
+        let activeAddress = window.UserSession ? window.UserSession.getActiveAddress() : null;
+        let savedNumbers = window.UserSession ? window.UserSession.getPhoneNumbers() : [];
+        let activeNumber = window.UserSession ? window.UserSession.getActivePhone() : null;
+        let currentEmail = window.UserSession ? window.UserSession.getEmail() : "";
+        let savedImage = currentEmail ? localStorage.getItem(currentEmail + "_profileImage") : null;
+        let savedLocations = window.UserSession ? window.UserSession.getScoped("savedAddresses", []) : [];
+        let orderedProducts = window.UserSession ? window.UserSession.getOrders() : [];
     
         let hasAddress = activeAddress && savedAddresses.length > 0;
         let hasPhone = activeNumber && savedNumbers.length > 0;

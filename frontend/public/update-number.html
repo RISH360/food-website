@@ -268,9 +268,10 @@ input:focus {
             setTimeout(async () => {
                 if (enteredOTP === generatedOTP) {
                     let newMobile = document.getElementById("newNumber").value;
-                    let email = localStorage.getItem("profileEmail");
+                    let email = sessionStorage.getItem("profileEmail") || localStorage.getItem("profileEmail");
         
-                    // ✅ Save to localStorage
+                    // ✅ Save to session and storage
+                    sessionStorage.setItem("profilePhone", newMobile);
                     localStorage.setItem("profilePhone", newMobile);
         
                     // ✅ Send to backend

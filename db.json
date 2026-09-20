@@ -6,7 +6,7 @@
       "nickName": "rish360",
       "email": "rishan@example.com",
       "mobile": "9876543210",
-      "password": "$2b$10$ENCRYPTED_HASH_HERE",
+      "password": "$2b$10$zMIftZLGyE2u2s9dL5rFdexKnzDWK51.2VkUXUMKAAmmpJLcs28OO",
       "cart": [],
       "orders": [
         {
@@ -19,8 +19,84 @@
             }
           ],
           "total": 100,
-          "status": "Processing",
-          "placedAt": "2025-04-12T12:34:56.789Z"
+          "status": "Cancelled",
+          "placedAt": "2025-04-12T12:34:56.789Z",
+          "cancelledAt": "2026-09-20T12:21:53.452Z"
+        },
+        {
+          "id": "ORD9779FB361E",
+          "items": [
+            {
+              "id": "dish_1",
+              "name": "Spicy Paneer Pizza",
+              "price": 299,
+              "quantity": 2
+            }
+          ],
+          "total": 598,
+          "status": "Cancelled",
+          "placedAt": "2026-09-20T12:21:07.043Z",
+          "cancelledAt": "2026-09-20T12:21:53.452Z"
+        },
+        {
+          "id": "ORD7F5C3D168B",
+          "items": [
+            {
+              "id": "dish_1",
+              "name": "Spicy Paneer Pizza",
+              "price": 299,
+              "quantity": 2
+            }
+          ],
+          "total": 598,
+          "status": "Cancelled",
+          "placedAt": "2026-09-20T12:21:53.435Z",
+          "cancelledAt": "2026-09-20T12:21:53.452Z"
+        },
+        {
+          "id": "ORD4F4340CC05",
+          "items": [
+            {
+              "name": "Chicken Biryani",
+              "price": 250,
+              "quantity": 1
+            }
+          ],
+          "total": 250,
+          "status": "Delivered",
+          "placedAt": "2026-09-20T12:34:37.244Z",
+          "deliveredAt": "2026-09-20T12:34:37.255Z"
+        },
+        {
+          "id": "ORD90A13113E1",
+          "items": [
+            {
+              "name": "Chicken Biryani",
+              "price": 250,
+              "quantity": 1
+            }
+          ],
+          "total": 250,
+          "paymentMethod": "Cash on Delivery",
+          "status": "Delivered",
+          "placedAt": "2026-09-20T13:04:21.037Z",
+          "deliveredAt": "2026-09-20T13:04:21.047Z"
+        },
+        {
+          "id": "ORDE0B2884908",
+          "items": [
+            {
+              "id": "dish_1",
+              "name": "Spicy Paneer Pizza",
+              "price": 299,
+              "quantity": 2
+            }
+          ],
+          "total": 598,
+          "paymentMethod": "Cash on Delivery",
+          "status": "Cancelled",
+          "placedAt": "2026-09-20T13:04:29.155Z",
+          "cancelledAt": "2026-09-20T13:04:29.173Z"
         }
       ],
       "addresses": []
@@ -31,10 +107,122 @@
       "nickName": "RD RISH",
       "email": "mohamedrishan360@gmail.com",
       "mobile": "6374349121",
-      "password": "$2b$10$6vKud8GOZagMArXlDt8Z7ub6R9lJyuugSZNx2HHLUhSR32/M/3iYW",
+      "password": "$2b$10$Pui7kkLagbDR4HQ5VuS9yuZzlO4x6EvLrXaQndWoOWYnIeNtb0fjK",
       "cart": [],
-      "orders": [],
-      "addresses": []
+      "orders": [
+        {
+          "id": "ORD3592624377",
+          "items": [
+            {
+              "name": "Delicious Burger",
+              "price": 150,
+              "quantity": 2
+            }
+          ],
+          "total": 300,
+          "status": "Cancelled",
+          "placedAt": "2026-09-20T11:20:33.657Z",
+          "cancelledAt": "2026-09-20T12:25:36.993Z"
+        },
+        {
+          "id": "ORD60C812230E",
+          "items": [
+            {
+              "name": "Momo Mia pizza",
+              "price": 349,
+              "basePrice": 349,
+              "quantity": 1,
+              "img": "static/momo-mia-veg.4e51f4733bea47a514c107c9fd2341e3.1.jpg",
+              "restaurant": "Not Available",
+              "rating": "4.5"
+            },
+            {
+              "name": "Crispy Chicken Burger",
+              "price": 1396,
+              "basePrice": 349,
+              "quantity": 4,
+              "img": "static/crispy-chicken-burger-3b4f47d62f7d58bef17dd8aa1f932c3d.png",
+              "restaurant": "Not Available",
+              "rating": "4.5"
+            },
+            {
+              "name": "Ramen Chinese noodles",
+              "price": 897,
+              "basePrice": 299,
+              "quantity": 3,
+              "img": "static/pngwing.com (94).png",
+              "restaurant": "Not Available",
+              "rating": "4.5"
+            },
+            {
+              "name": "Chicken Sandwitch",
+              "price": 369,
+              "basePrice": 369,
+              "quantity": 1,
+              "img": "static/pngwing.com (25).png",
+              "restaurant": "Not Available",
+              "rating": "4.5"
+            }
+          ],
+          "total": 8993,
+          "status": "Cancelled",
+          "placedAt": "2026-09-20T11:54:03.412Z",
+          "cancelledAt": "2026-09-20T12:25:36.993Z"
+        },
+        {
+          "id": "ORD4B7453D95E",
+          "items": [
+            {
+              "name": "Delicious Beef Burger",
+              "price": 718,
+              "basePrice": 359,
+              "quantity": 2,
+              "img": "static/delicious-beef-burger-05c72cc08b933716e4cc97cb9656089c.png",
+              "restaurant": "Not Available",
+              "rating": "4.5"
+            }
+          ],
+          "total": 1436,
+          "status": "Cancelled",
+          "placedAt": "2026-09-20T12:40:36.328Z",
+          "cancelledAt": "2026-09-20T12:41:12.016Z"
+        },
+        {
+          "id": "ORD5C42AC1843",
+          "items": [
+            {
+              "name": "Crispy Chicken Burger",
+              "price": 349,
+              "basePrice": 349,
+              "quantity": 1,
+              "img": "static/crispy-chicken-burger-3b4f47d62f7d58bef17dd8aa1f932c3d.png",
+              "restaurant": "Not Available",
+              "rating": "4.5"
+            }
+          ],
+          "total": 349,
+          "status": "Cancelled",
+          "placedAt": "2026-09-20T12:41:48.130Z",
+          "cancelledAt": "2026-09-20T13:06:58.416Z"
+        }
+      ],
+      "addresses": [
+        {
+          "pincode": "695001",
+          "state": "Kerala",
+          "city": "Thiruvananthapuram",
+          "houseNo": "fsdggdsgs",
+          "roadName": "Vellayani Junction Punnamoodu Road, Vellayani",
+          "addressType": "Home"
+        }
+      ],
+      "activeAddress": "fsdggdsgs",
+      "phoneNumbers": [
+        {
+          "number": "6374349121"
+        }
+      ],
+      "activeNumber": 6374349121
     },
     {
       "firstName": "rete",
@@ -42,10 +230,20 @@
       "nickName": "ertert",
       "email": "aaaaaaaa@gmail.com",
       "mobile": "1111111111",
-      "password": "$2b$10$oZSK4S/2b8YIQyvWydtKm.5WqUwbVr5eojtYGWcY5P/37x5j.LEdy",
+      "password": "$2b$10$zMIftZLGyE2u2s9dL5rFdexKnzDWK51.2VkUXUMKAAmmpJLcs28OO",
       "cart": [],
       "orders": [],
-      "addresses": []
+      "addresses": [
+        {
+          "houseNo": "404",
+          "roadName": "MG Road",
+          "city": "Bangalore",
+          "state": "Karnataka",
+          "pincode": "560001",
+          "addressType": "Work"
+        }
+      ],
+      "activeAddress": "404"
     },
     {
       "firstName": "ryna",
@@ -53,10 +251,20 @@
       "nickName": "ryna",
       "email": "",
       "mobile": "2222222222",
-      "password": "$2b$10$DZqn79eB3OlYOdCKATmTxexZFUxmLtQthKxHKDAnZ2jJr0eNtaT6i",
+      "password": "$2b$10$dpqOON2bNr8FAHTySpGc7e8ov1s1WevGHm/fOveSw6qYAM/MDl836",
       "cart": [],
       "orders": [],
       "addresses": []
+    },
+    {
+      "firstName": "gsgs",
+      "lastName": "dsgd",
+      "nickName": "dsgdsg",
+      "email": "rishanfinnest699@gmail.com",
+      "mobile": "9488049243",
+      "password": "$2b$10$1zREKdeDZ/LYTTR.01l.0.5DvOjEWuUvsrVzZVc9JwnhgzAnkIdx2",
+      "activeNumber": "",
+      "phoneNumbers": []
     }
   ]
 }
