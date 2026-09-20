@@ -14,20 +14,8 @@
   ],
   "routes": [
     {
-      "src": "/static/(.*)",
-      "dest": "/frontend/public/static/$1"
-    },
-    {
-      "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|svg|ico|webp|html))",
-      "dest": "/frontend/public/$1"
-    },
-    {
-      "src": "/",
-      "dest": "/frontend/public/index.html"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/server.js"
+      "dest": "server.js"
     }
   ]
 }

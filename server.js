@@ -16,13 +16,14 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
-let file = path.join(__dirname, "db.json");
+const baseDir = fs.existsSync(path.join(__dirname, "db.json")) ? __dirname : process.cwd();
+let file = path.join(baseDir, "db.json");
 
 if (isVercel) {
     file = path.join("/tmp", "db.json");
     if (!fs.existsSync(file)) {
         try {
-            const seed = path.join(__dirname, "db.json");
+            const seed = path.join(baseDir, "db.json");
             if (fs.existsSync(seed)) {
                 fs.copyFileSync(seed, file);
             } else {
@@ -870,12 +871,33 @@ app.get("/api/detect-ip-location", async (req, res) => {
     res.status(500).json({ success: false, message: "IP location detection failed" });
 });
 
-// Serve static files from the correct folder
-app.use(express.static(path.join(__dirname, "frontend", "public")));
+// Serve static files from the correct folder with multi-path resolution
+const resolvePublicDir = () => {
+  const dirPath = path.join(__dirname, "frontend", "public");
+  if (fs.existsSync(dirPath)) return dirPath;
+  const cwdPath = path.join(process.cwd(), "frontend", "public");
+  if (fs.existsSync(cwdPath)) return cwdPath;
+  return dirPath;
+};
+const publicPath = resolvePublicDir();
+
+app.use(express.static(publicPath));
+app.use("/static", express.static(path.join(publicPath, "static")));
+
+// Fallback to [page].html if requested without extension
+app.use((req, res, next) => {
+  if (req.method === "GET" && !req.path.includes(".")) {
+    const candidate = path.join(publicPath, `${req.path.replace(/^\//, "")}.html`);
+    if (fs.existsSync(candidate)) {
+      return res.sendFile(candidate);
+    }
+  }
+  next();
+});
 
 // Serve index.html at root
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "frontend", "public", "index.html"));
+  res.sendFile(path.join(publicPath, "index.html"));
 });
 
 
