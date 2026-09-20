@@ -2,7 +2,7 @@ import multer from 'multer';
 import { v4 as uuidv4 } from "uuid"; // add this at the top of your file
 import express from "express";
 import bodyParser from "body-parser";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import { Low } from "lowdb";
 import { JSONFile } from "lowdb/node";
 import path from "path";
@@ -15,25 +15,51 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = process.env.PORT || 3000;
 
-const file = path.join(__dirname, "db.json");
+const isVercel = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+let file = path.join(__dirname, "db.json");
+
+if (isVercel) {
+    file = path.join("/tmp", "db.json");
+    if (!fs.existsSync(file)) {
+        try {
+            const seed = path.join(__dirname, "db.json");
+            if (fs.existsSync(seed)) {
+                fs.copyFileSync(seed, file);
+            } else {
+                fs.writeFileSync(file, JSON.stringify({ users: [] }));
+            }
+        } catch (e) {
+            console.warn("Failed to initialize /tmp/db.json:", e);
+        }
+    }
+}
+
 const adapter = new JSONFile(file);
 const db = new Low(adapter, { users: [] });
 
 async function initDB() {
-    await db.read();
-    db.data ||= { users: [] };
-    await db.write();
+    try {
+        await db.read();
+        db.data ||= { users: [] };
+        await db.write();
+    } catch (err) {
+        console.warn("initDB write failed (e.g. read-only filesystem):", err);
+    }
 }
 initDB();
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      const uploadPath = path.join(__dirname, 'uploads');
+      const uploadPath = isVercel ? path.join('/tmp', 'uploads') : path.join(__dirname, 'uploads');
       if (!fs.existsSync(uploadPath)) {
-        fs.mkdirSync(uploadPath); // Create folder if not exists
+        try {
+          fs.mkdirSync(uploadPath, { recursive: true });
+        } catch (e) {
+          console.warn("Failed to create upload dir:", e);
+        }
       }
-      cb(null, uploadPath); // Save files to 'uploads' folder
+      cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
       const uniqueName = uuidv4() + path.extname(file.originalname); // Unique file name
@@ -854,6 +880,10 @@ app.get("/", (req, res) => {
 
 
 // Start server
-app.listen(port, () => {
-  console.log(`🚀 Server running at http://localhost:${port}`);
-});
+if (!process.env.VERCEL) {
+  app.listen(port, () => {
+    console.log(`🚀 Server running at http://localhost:${port}`);
+  });
+}
+
+export default app;
